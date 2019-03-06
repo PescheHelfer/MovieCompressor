@@ -15,13 +15,37 @@ def get_metadata(file):
     
 def set_metadata(file, metadata):
     """Sets all the dates to the file modification date of the original movie and restores make/model information."""
+    
     target_date_time_str = metadata['File Modification Date/Time']
-    target_date_time_adj_str = datetime.strptime(target_date_time_str[:19], '%Y:%m:%d %H:%M:%S') # [:19] -> remove offset
-    make = metadata['Make'] #ToDo: Catch key error when key does not exist -> if key in my_dict and not (my_dict[key] is None):  -> Do that for each key, while reading and writing
-    model = metadata['Model']
-    software = metadata['Software']
-    rotation = metadata['Rotation']
+    target_date_time_adj_str = target_date_time_str[:19] # [:19] -> remove offset
+
+    metadata_to_use_dict = {
+		"'File Modification Date/Time'" : ["-FileModifyDate",target_date_time_str],
+		"File Creation Date/Time" : ["-FileCreateDate",target_date_time_str],
+		"Creation Date" : ["-CreationDate",target_date_time_str],
+		"Media Create Date" : ["-MediaCreateDate",target_date_time_adj_str],
+		"Media Modify Date" : ["-MediaModifyDate",target_date_time_adj_str],
+		"Create Date" : ["-CreateDate",target_date_time_adj_str],
+        "Modify Date" : ["-ModifyDate",target_date_time_adj_str],
+        "Track Create Date" : ["-TrackCreateDate",target_date_time_adj_str],
+        "Track Modify Date" : ["-TrackModifyDate",target_date_time_adj_str],
+        "Make" : ["-Make",""],
+        "iModel" : ["-Model",""],
+        "Software" : ["-Software",""],
+        "Rotation" : ["-Rotation",""]
+
+	}
     # handler_vendor_id = metadata['Handler Vendor ID'] # not writeable :(
+    stringbuilder = ["exiftool"] # list to join to create the final command string in the end
+
+    for key, value in metadata_to_use_dict.items():
+        if(key in metadata):
+            stringbuilder.append(value[0]+'="'+(metadata[key] if value[1]=="" else value[1])+'"')
+
+    stringbuilder.append('"'+file+'"')
+    command = " ".join(stringbuilder) # note: the space in " " is actually the seperator!
+
+ 
     
     # it's not required to substract an hour (code below)
     # target_date_time_dt = datetime.strptime(target_date_time_str[:19], '%Y:%m:%d %H:%M:%S') # [:19] -> remove offset
@@ -30,10 +54,10 @@ def set_metadata(file, metadata):
     # print(target_date_time_adj_str)
 
     # assemble string beforehand because subprocess introduces spaces between the arguments (between " and the file path)
-    command = ('exiftool -FileModifyDate="{0}" -FileCreateDate="{0}" -CreationDate="{0}" '
-        '-MediaCreateDate="{1}" -MediaModifyDate="{1}" -CreateDate="{1}" -ModifyDate="{1}" -TrackCreateDate="{1}" -TrackModifyDate="{1}" '
-        '-Make="{2}" -Model="{3}" -Software="{4}" -Rotation="{5}" "{6}"'
-        .format(target_date_time_str, target_date_time_adj_str, make, model, software, rotation, file))
+    #command = ('exiftool -FileModifyDate="{0}" -FileCreateDate="{0}" -CreationDate="{0}" '
+    #    '-MediaCreateDate="{1}" -MediaModifyDate="{1}" -CreateDate="{1}" -ModifyDate="{1}" -TrackCreateDate="{1}" -TrackModifyDate="{1}" '
+    #    '-Make="{2}" -Model="{3}" -Software="{4}" -Rotation="{5}" "{6}"'
+    #    .format(target_date_time_str, target_date_time_adj_str, make, model, software, rotation, file))
 
     # print(command)
     subprocess.check_call(command)
