@@ -56,7 +56,7 @@ properties = get_media_properties(file)
 print(properties)
 # creation_date und last_moditifaction entsprechen dem (falschen) Ursrungsdatum (Ursprung -> Medium erstellt), nicht den korrigierten Datumsangaben des Files
 # //DONE: Wie kommt man an die Datumsangaben des Files ran? -> see below
-# //TODO: Wie kann man das Ursprungsdatum überschreiben?
+
 
 # get creation and modification date of the file (the one I corrected, not the same as the one from metadata)
 print("last modified: %s" % time.ctime(os.path.getmtime(file)))
