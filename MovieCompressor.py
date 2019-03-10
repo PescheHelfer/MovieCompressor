@@ -1,9 +1,9 @@
 import subprocess
 import re
 import os
-from datetime import datetime, timedelta
+# from datetime import datetime, timedelta
 
-movie_path_in = r'F:\TestMovies\096_Pana_P1200692.MP4'
+movie_path_in = r'F:\TestMovies\P1140826.MP4'
 
 # ToDo: Folder or File as Input Paramter. If Folder is passed: process all movie files, otherwise only single movie
 # ToDo: (Optional) as default: use folder from which script is called
@@ -21,17 +21,27 @@ def get_metadata(movie_path):
     rx = re.compile('\W+\: ')
     metadata_list = [rx.sub(': ', item) for item in metadata_str.split("\r\n")]
     # the last item is an ' and can't be split
-    metadata_dict = dict(item.split(": ") for item in metadata_list[:-1])
+    metadata_dict = dict(item.split(": ", maxsplit=1) for item in metadata_list[:-1])
     return metadata_dict
 
 
-def compress_movie(movie_path):
+def compress_movie(movie_path, crf='25', speed='veryslow'):
+    _crf = str(crf)
+    _preset = '' if speed == '' else (' -preset '+speed)
     movie_lst = os.path.splitext(movie_path)
     movie_cmp = movie_lst[0]+'_c'+movie_lst[1]
-    command = 'ffmpeg -i "{0}" -c:v libx264 -crf 23 -c:a aac -map_metadata 0 "{1}"'.format(
-        movie_path, movie_cmp)
-   # print(command)
+    command = 'ffmpeg -i "{0}" -c:v libx264 -crf {1}{2} -map_metadata 0 "{3}"'.format(
+        movie_path,  _crf, _preset, movie_cmp)
+    # -i              -> input file(s)
+    # -c:v            -> select video encoder
+    # -c:a            -> select audio encoder (skipping this will simply copy the audio stream without reencoding)
+    # -crf            -> Change the CRF value for video. Lower means better quality. 23 is default, and anything below 18 will probably be visually lossless
+    # -preset slower  -> slower settings have better quality:compression ratios. Each step about doubles the processing time!
+    # -map_metadata 0 -> Map the metadata from file 0 to the output
+    # https://trac.ffmpeg.org/wiki/Encode/H.264
+    # http://trac.ffmpeg.org/wiki/Encode/AAC
     subprocess.check_call(command)
+    #print(command)
     return movie_cmp
 
 
@@ -76,7 +86,7 @@ def set_metadata(movie_path, metadata):
 
 
 metadata = get_metadata(movie_path_in)
-movie_path_out = compress_movie(movie_path_in)
+movie_path_out = compress_movie(movie_path_in) #, '23', 'slow')
 set_metadata(movie_path_out, metadata)
 # print(metadata)
 # print(metadata['file Modification Date/Time'])

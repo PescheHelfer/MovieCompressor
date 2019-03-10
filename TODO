@@ -1,0 +1,4 @@
+
+Todo:
+  ☐ Bei .mov vom I-Phone gibt es tatsächlich eine Stunde Differenz zwischen "Änderungsdatum" und "Medium erstellt", z.B. bei IMG_E0095_c.MOV
+  ☐ Weitere Exif-Daten übernehmen (Panasonic speichert einiges ab, siehe EXIF_Data.txt)

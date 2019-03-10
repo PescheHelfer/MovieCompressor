@@ -1,0 +1,15 @@
+096_Pana_P1200692
+-> Hardly a difference between original and CFR30 (slow)!
+
+P1090370_crf30_slow
+-> Haare und Struktur der Wand bei CRF30 schlechter als im Original
+-> diesbezüglich kein Unterschied zwischen slow und very slow, letzteres ist nur noch kleiner
+-> CFR23: nur minimale Einbusse in der Wandstruktur, kaum sichtbar, Haare quasi identisch
+-> bis CFR25 gut, danach sichtbare Qualitätseinbusse in Wandstruktur
+-> Slower bringt im Vergleich zu Slow nichts
+-> Veryslow holt nochmal deutlich mehr Kompression raus, dauert aber lange (100 sec pro 25 sec Film),
+   sollte aber noch akzeptabel sein. Parameter: speed, default = veryslow
+
+==> CRF25 veryslow
+
+Audio-Kompression lohnt sich nicht, grössenmässig nur wenige 100 kb Differenz
