@@ -1,4 +1,11 @@
 
 Todo:
-  ☐ Bei .mov vom I-Phone gibt es tatsächlich eine Stunde Differenz zwischen "Änderungsdatum" und "Medium erstellt", z.B. bei IMG_E0095_c.MOV
+  ☐ Bei .mov vom I-Phone gibt es tatsächlich eine Stunde Differenz zwischen "Änderungsdatum" und "Medium erstellt", z.B. bei IMG_E0095_c.MOV. Achtung: Im Sommer sind es 2 h Offset!
+  ☐ Ab verlässlichsten und einheitlichsten scheinen das "CreationDate" (iPhone), "DateTimeOriginal" (andere) und "FileModifyDate" zu sein. -> Wenn vorhanden, das CreationDate verwenden, nur sonst das MinimalDate.
   ☐ Weitere Exif-Daten übernehmen (Panasonic speichert einiges ab, siehe EXIF_Data.txt)
+  ☐ Get Timezone and add it back to the dates that use  (ausschliesslich aus dem FileModifyDate oder Apples CreationDate! (bei Apple aus dem jeweils kleineren))
+  ☐ metadata_to_use_dict in set_metadata() so anpassen, dass mit Tags statt Description umgegangen werden kann
+  ☐ Metadaten in Flatfile auslagern, aber nur jene, die keine zusätzliche Logik benötigen (also z.B. nicht die Datumsfelder)
+  ☐ Von allen Datumsfeldern den kleinsten Wert nehmen (der bei edierten Movies nicht immer das ModifyDate sein muss)
+  ☐ Mit Avi und MPEG testen
+  ☐ Prüfen ob es ein thm-File gibt, wenn ja, Metadatan daraus einlesen
