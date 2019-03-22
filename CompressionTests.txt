@@ -10,6 +10,34 @@ P1090370_crf30_slow
 -> Veryslow holt nochmal deutlich mehr Kompression raus, dauert aber lange (100 sec pro 25 sec Film),
    sollte aber noch akzeptabel sein. Parameter: speed, default = veryslow
 
+P1090370_crf30_slow
+
 ==> CRF25 veryslow
 
 Audio-Kompression lohnt sich nicht, grössenmässig nur wenige 100 kb Differenz
+
+x265
+P1090370x265_crf30_slow
+-> deutlich schlechter als x264 CRF25
+
+P1090370x265_crf25_slow.MP4
+-> vergleichbar mit x264 CRF25, Haar sogar etwas besser (glatter), etwa 20% kleiner
+-> kein visueller Unterschied zwischen slow und slower. Slower sogar minim grösser. Very Slow ist noch grösser.
+-> slow:	2 min
+-> slower:	7 min!!
+-> very slow:	10 min!!!
+
+P1090370x265_crf26_slow.MP4 slow
+-> immer noch vergleichbar mit x264 CRF25
+-> 30% kleiner
+-> 2 min
+
+P1090370x265_crf27_slow.MP4 slow
+-> erste Unterschiede in der Wandstruktur
+-> 40% kleiner
+
+P1090370x265_crf28_slow.MP4 slow
+-> deutlichere Einbussen in Wandstruktur und Haut
+-> 50% kleiner
+
+==> CRF 26 slow

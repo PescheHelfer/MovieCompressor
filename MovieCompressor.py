@@ -117,13 +117,16 @@ def get_original_date_and_tz_offset(metadata):
     return {"original_date": original_date.strftime("%Y:%m:%d %H:%M:%S"), "original_date_tz": original_date_tz}
 
 
-def compress_movie(movie_path, crf="25", speed="veryslow"):
-    _crf = str(crf)
-    _preset = "" if speed == "" else (" -preset " + speed)
+def compress_movie(movie_path, codec="x265", crf="", speed=""):
+    """Compress movie with x265, crf 26 slow (default) or x264 crf 25 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
+    _codec = "libx265" if codec.lower() == "x265" else "libx264" if codec.lower() == "x264" else codec
+    _crf = str(crf) if str(crf) != "" and crf != None else "26" if codec == "x265" else "25"
+    # 25 best for x264, 26 equal quality for x265
+    _preset = (" -preset " + speed) if str(speed) != "" and speed != None else " -preset veryslow" if codec=="x264" else " -preset slow"
     movie_lst = os.path.splitext(movie_path)
     movie_cmp = movie_lst[0] + "_c" + movie_lst[1]
-    command = 'ffmpeg -i "{0}" -c:v libx264 -crf {1}{2} -map_metadata 0 "{3}"'.format(
-        movie_path, _crf, _preset, movie_cmp)
+    command = 'ffmpeg -i "{0}" -c:v {1} -crf {2}{3} -map_metadata 0 "{4}"'.format(movie_path, _codec, _crf, _preset,
+                                                                                  movie_cmp)
     # -i              -> input file(s)
     # -c:v            -> select video encoder
     # -c:a            -> select audio encoder (skipping this will simply copy the audio stream without reencoding)
@@ -132,8 +135,8 @@ def compress_movie(movie_path, crf="25", speed="veryslow"):
     # -map_metadata 0 -> Map the metadata from file 0 to the output
     # https://trac.ffmpeg.org/wiki/Encode/H.264
     # http://trac.ffmpeg.org/wiki/Encode/AAC
-    subprocess.check_call(command)
-    # print(command)
+    #subprocess.check_call(command)
+    print(command)
     return movie_cmp
 
 
@@ -194,11 +197,11 @@ def set_metadata(movie_path, metadata):
     subprocess.check_call(command)
 
 
-metadata = get_metadata(movie_path_in)
-original_date_dict = get_original_date_and_tz_offset(metadata)
-print(original_date_dict)
+# metadata = get_metadata(movie_path_in)
+# original_date_dict = get_original_date_and_tz_offset(metadata)
+# print(original_date_dict)
 
-# movie_path_out = compress_movie(movie_path_in)  # , "23", "slow")
+movie_path_out = compress_movie(movie_path_in, crf=20, speed="veryslow")  # , "23", "slow")
 #set_metadata(movie_path_out, metadata)
 
 # print(metadata)

@@ -3,22 +3,23 @@ import subprocess
 import os
 import time
 
-movie_path_in = r'F:\TestMovies\P1090370.MP4'
+movie_path_in = r"F:\TestMovies\P1090370.MP4"
 
-
-def test_movie_compression(movie_path, crf, speed='', aac=''):
+def test_movie_compression(movie_path, crf, speed="", codec="x264", aac=""):
+    _codec = "libx265" if codec.lower() == "x265" else "libx264" if codec.lower() == "x264" else codec
     _crf = str(crf)
-    _preset = '' if speed == '' else (' -preset '+speed)
-    _aac = '' if aac == '' else (' -c:a '+aac)
+    _preset = "" if speed == "" else (" -preset "+speed)
+    _aac = "" if aac == "" else (" -c:a "+aac)
     movie_lst = os.path.splitext(movie_path)
-    movie_cmp = '{0}_crf{1}{2}{3}{4}'.format(
+    movie_cmp = "{0}_{1}_crf{2}{3}{4}{5}".format(
         movie_lst[0]
+        , codec
         , _crf
-        , '' if speed == '' else ('_'+speed)
-        , '' if aac == '' else ('_'+aac.replace('-','').replace(':','').replace(' ','_'))
+        , "" if speed == "" else ("_"+speed)
+        , "" if aac == "" else ("_"+aac.replace("-","").replace(":","").replace(" ","_"))
         , movie_lst[1])
-    command = 'ffmpeg -i "{0}" -c:v libx264 -crf {1}{2}{3} "{4}"'.format(
-        movie_path, _crf, _preset, _aac, movie_cmp)
+    command = 'ffmpeg -i "{0}" -c:v {1} -crf {2}{3}{4} "{5}"'.format(
+        movie_path, _codec, _crf, _preset, _aac, movie_cmp)
     # -i              -> input file(s)
     # -c:v            -> select video encoder
     # -c:a            -> select audio encoder (skipping this will simply copy the audio stream without reencoding)
@@ -30,25 +31,29 @@ def test_movie_compression(movie_path, crf, speed='', aac=''):
     print(command)
     t = time.time()
     subprocess.check_call(command)
-    print('Elapsed_time:{}'.format(time.time() - t))
+    print("Elapsed_time:{}".format(time.time() - t))
     return movie_cmp
 
 
 # print(test_movie_compression(movie_path_in, 23))
-# print(test_movie_compression(movie_path_in, 23, 'slow'))
-# print(test_movie_compression(movie_path_in, 23, 'slow', 'aac'))
-# print(test_movie_compression(movie_path_in, 24, 'slow'))
-# print(test_movie_compression(movie_path_in, 25, 'slow'))
-# print(test_movie_compression(movie_path_in, 25, 'slower'))
-# print(test_movie_compression(movie_path_in, 25, 'veryslow'))
-# print(test_movie_compression(movie_path_in, 26, 'slow'))
-# print(test_movie_compression(movie_path_in, 27, 'slow'))
-# print(test_movie_compression(movie_path_in, 27, 'slower'))
-# print(test_movie_compression(movie_path_in, 30, 'slow'))
-# print(test_movie_compression(movie_path_in, 30, 'slower'))
-# print(test_movie_compression(movie_path_in, 30, 'veryslow'))
+# print(test_movie_compression(movie_path_in, 23, "slow"))
+# print(test_movie_compression(movie_path_in, 23, "slow", "aac"))
+# print(test_movie_compression(movie_path_in, 24, "slow"))
+# print(test_movie_compression(movie_path_in, 25, "slow"))
+# print(test_movie_compression(movie_path_in, 25, "slower"))
+# print(test_movie_compression(movie_path_in, 25, "veryslow"))
+# print(test_movie_compression(movie_path_in, 26, "slow"))
+# print(test_movie_compression(movie_path_in, 27, "slow"))
+# print(test_movie_compression(movie_path_in, 27, "slower"))
+# print(test_movie_compression(movie_path_in, 28, "slow"))
+# print(test_movie_compression(movie_path_in, 30, "slow"))
+# print(test_movie_compression(movie_path_in, 30, "slower"))
+# print(test_movie_compression(movie_path_in, 30, "veryslow"))
 
-print(test_movie_compression(movie_path_in, 25, 'slow', 'aac -b:a 160k'))
-print(test_movie_compression(movie_path_in, 25, 'slow', 'aac -b:a 128k'))
-print(test_movie_compression(movie_path_in, 25, 'slow', 'aac -q:a 2'))
-print(test_movie_compression(movie_path_in, 25, 'slow', 'aac -q:a 1'))
+# print(test_movie_compression(movie_path_in, 25, "slow", "aac -b:a 160k"))
+# print(test_movie_compression(movie_path_in, 25, "slow", "aac -b:a 128k"))
+# print(test_movie_compression(movie_path_in, 25, "slow", "aac -q:a 2"))
+# print(test_movie_compression(movie_path_in, 25, "slow", "aac -q:a 1"))
+
+print(test_movie_compression(movie_path_in, 25, "fast", "x264"))
+print(test_movie_compression(movie_path_in, 25, "fast", "x265"))

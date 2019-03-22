@@ -9,3 +9,13 @@ Todo:
   ✔ Von allen Datumsfeldern den kleinsten Wert nehmen (der bei edierten Movies nicht immer das ModifyDate sein muss) @done(19-03-19 21:54)
   ☐ Mit Avi und MPEG testen
   ✔ Prüfen ob es ein thm-File gibt, wenn ja, Metadatan daraus einlesen @done(19-03-19 22:09)
+  ☐ Möglichkeit der Videobeschneidung einbauen (Start, Stop)
+  https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
+  The following would clip the first 30 seconds, and then clip everything that is 10 seconds after that:
+  ffmpeg -ss 00:00:30.0 -i input.wmv -c copy -t 00:00:10.0 output.wmv
+  You can use -to instead of -t to specify the timestamp to which you want to cut. So, instead of -i <input> -ss 30 -t 10 you could also do -i <input> -ss 30 -to 40 to achieve the same thing.
+  ✔ Wahlweise x264 oder x265 @done(19-03-22 22:02)
+  ✔ Default für x264: CRF25 veryslow @done(19-03-22 22:02)
+  ✔ Default für x265: CRF26 slow @done(19-03-22 22:02)
+  ☐ Proper Docstrings using Autodocstring
+  ☐ Parameter validition e.g. by using dictionaries or when calling it from cmd
