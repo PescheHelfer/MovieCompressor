@@ -2,14 +2,15 @@
 Todo:
   ✔ Bei .mov vom I-Phone gibt es tatsächlich eine Stunde Differenz zwischen "Änderungsdatum" und "Medium erstellt", z.B. bei IMG_E0095_c.MOV. Achtung: Im Sommer sind es 2 h Offset! @done(19-03-19 21:53)
   ✔ Ab verlässlichsten und einheitlichsten scheinen das "CreationDate" (iPhone), "DateTimeOriginal" (andere) und "FileModifyDate" zu sein. -> Wenn vorhanden, das CreationDate verwenden, nur sonst das MinimalDate. @done(19-03-19 21:53)
-  ☐ Weitere Exif-Daten übernehmen (Panasonic speichert einiges ab, siehe EXIF_Data.txt)
+  ☐ @high Weitere Exif-Daten übernehmen (Panasonic speichert einiges ab, siehe EXIF_Data.txt)
   ✔ Get Timezone and add it back to the dates that use  (ausschliesslich aus dem FileModifyDate oder Apples CreationDate! (bei Apple aus dem jeweils kleineren)) @done(19-03-19 21:53)
-  ☐ metadata_to_use_dict in set_metadata() so anpassen, dass mit Tags statt Description umgegangen werden kann
-  ☐ Metadaten in Flatfile auslagern, aber nur jene, die keine zusätzliche Logik benötigen (also z.B. nicht die Datumsfelder)
+  ☐ @critical metadata_to_use_dict in set_metadata() so anpassen, dass mit Tags statt Description umgegangen werden kann
+  ☐ @low Metadaten in Flatfile auslagern, aber nur jene, die keine zusätzliche Logik benötigen (also z.B. nicht die Datumsfelder)
+  ☐ @low Im Metadaten-Flatfile mit Flag definieren, ob Feld auch befüllt werden soll, wenn im Original nicht vorhanden, neu aber ein Wert vorhanden ist (z.B. die meisten Datumsangaben aber nicht alle)
   ✔ Von allen Datumsfeldern den kleinsten Wert nehmen (der bei edierten Movies nicht immer das ModifyDate sein muss) @done(19-03-19 21:54)
   ☐ Mit Avi und MPEG testen
   ✔ Prüfen ob es ein thm-File gibt, wenn ja, Metadatan daraus einlesen @done(19-03-19 22:09)
-  ☐ Möglichkeit der Videobeschneidung einbauen (Start, Stop)
+  ☐ @high Möglichkeit der Videobeschneidung einbauen (Start, Stop)
   https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
   The following would clip the first 30 seconds, and then clip everything that is 10 seconds after that:
   ffmpeg -ss 00:00:30.0 -i input.wmv -c copy -t 00:00:10.0 output.wmv
@@ -17,5 +18,8 @@ Todo:
   ✔ Wahlweise x264 oder x265 @done(19-03-22 22:02)
   ✔ Default für x264: CRF25 veryslow @done(19-03-22 22:02)
   ✔ Default für x265: CRF26 slow @done(19-03-22 22:02)
-  ☐ Proper Docstrings using Autodocstring
-  ☐ Parameter validition e.g. by using dictionaries or when calling it from cmd
+  
+Ideas:  
+  ☐ @low Proper Docstrings using Autodocstring
+  ☐ @low Parameter validition e.g. by using dictionaries or when calling it from cmd
+  ☐ @low Parameter typing: https://mypy.readthedocs.io/en/latest/cheat_sheet_py3.html

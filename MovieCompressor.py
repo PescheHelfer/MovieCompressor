@@ -3,7 +3,9 @@ import re
 import os
 from datetime import datetime, timezone  # , timedelta
 
-movie_path_in = r"f:\TestMovies\CameraTest\VTech_Kidizoom\101_0156.AVI"
+movie_path_in: str = r"f:\TestMovies\CameraTest\OlympusC70Z\PA070030.MOV"
+movie_path_out: str = ""
+video_codec: str = ""
 
 # ToDo: Folder or File as Input Paramter. If Folder is passed: process all movie files, otherwise only single movie
 # IDEA: (Optional) as default: use folder from which script is called
@@ -56,7 +58,7 @@ def try_parse_date(string):
         return None
 
 
-def get_original_date_and_tz_offset(metadata):
+def get_original_date_and_tz_offset(metadata_dict):
     # Bei den meisten Modellen sind nur das "CreationDate" (Apple), "DateTimeOriginal" (einige andere) verlässlich. Jedoch weisen nicht alle
     # Modelle diese Felder auf. Meistens ist auch das "FileModifyDate" verlässlich. Übrige Zeitangaben weichen je Modell um -1h ab, unabhängig von Sommerzeit.
     # Allerdings gibt es auch Fälle, bei denen das FileModifyDate Jahre nach den andern Zeitangaben liegt. Dabei scheint es sich allerdings
@@ -71,12 +73,9 @@ def get_original_date_and_tz_offset(metadata):
     # Sonst aus dem "FileModifyDate" übernehmen.
 
     # parse strings and remove timezone to avoid error: TypeError("can"t compare offset-naive and offset-aware datetimes")
-    dates_dict = {k: try_parse_date(v) for (k, v) in metadata.items()}
+    dates_dict = {k: try_parse_date(v) for (k, v) in metadata_dict.items()}
     dates_dict_tz_removed = {k: v.replace(tzinfo=None) for (k, v) in dates_dict.items() if v is not None}
-    dates_dict_tz = {
-        k: v
-        for (k, v) in dates_dict.items() if v is not None if v.tzinfo is not None if v.tzinfo.utcoffset(v) is not None
-    }
+    dates_dict_tz = {k: v for (k, v) in dates_dict.items() if v is not None if v.tzinfo is not None if v.tzinfo.utcoffset(v) is not None}
 
     min_date = min({k: v.replace(tzinfo=None) for (k, v) in dates_dict_tz_removed.items() if v is not None}.values())
     original_date = None
@@ -119,14 +118,13 @@ def get_original_date_and_tz_offset(metadata):
 
 def compress_movie(movie_path, codec="x265", crf="", speed=""):
     """Compress movie with x265, crf 26 slow (default) or x264 crf 25 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
-    _codec = "libx265" if codec.lower() == "x265" else "libx264" if codec.lower() == "x264" else codec
-    _crf = str(crf) if str(crf) != "" and crf != None else "26" if codec == "x265" else "25"
+    codec_ = "libx265" if codec.lower() == "x265" else "libx264" if codec.lower() == "x264" else codec
+    crf_ = str(crf) if str(crf) != "" and crf != None else "26" if codec == "x265" else "25"
     # 25 best for x264, 26 equal quality for x265
-    _preset = (" -preset " + speed) if str(speed) != "" and speed != None else " -preset veryslow" if codec=="x264" else " -preset slow"
+    preset_ = (" -preset " + speed) if str(speed) != "" and speed != None else " -preset veryslow" if codec == "x264" else " -preset slow"
     movie_lst = os.path.splitext(movie_path)
-    movie_cmp = movie_lst[0] + "_c" + movie_lst[1]
-    command = 'ffmpeg -i "{0}" -c:v {1} -crf {2}{3} -map_metadata 0 "{4}"'.format(movie_path, _codec, _crf, _preset,
-                                                                                  movie_cmp)
+    movie_cmp = movie_lst[0] + "c" + movie_lst[1]
+    command = 'ffmpeg -i "{0}" -c:v {1} -crf {2}{3} -map_metadata 0 "{4}"'.format(movie_path, codec_, crf_, preset_, movie_cmp)
     # -i              -> input file(s)
     # -c:v            -> select video encoder
     # -c:a            -> select audio encoder (skipping this will simply copy the audio stream without reencoding)
@@ -135,59 +133,220 @@ def compress_movie(movie_path, codec="x265", crf="", speed=""):
     # -map_metadata 0 -> Map the metadata from file 0 to the output
     # https://trac.ffmpeg.org/wiki/Encode/H.264
     # http://trac.ffmpeg.org/wiki/Encode/AAC
-    #subprocess.check_call(command)
-    print(command)
-    return movie_cmp
+    subprocess.check_call(command)
+    #print(command)
+    return {"movie_path_out": movie_cmp, "codec": codec.upper()}
 
 
-def set_metadata(movie_path, metadata):
-    """Sets all the dates to the file modification date of the original movie and restores make/model information."""
+def set_metadata(movie_path, metadata_dict, original_date_dict):
+    """Sets most dates to the file modification date of the original movie and restores make/model information."""
 
-    target_date_time_str = metadata["File Modification Date/Time"]
-    # [:19] -> remove offset
-    target_date_time_adj_str = target_date_time_str[:19]
+    original_date = original_date_dict["original_date"]  # w/ timezone
+    original_date_tz = original_date_dict["original_date_tz"]  # w/o timezone
 
-    metadata_to_use_dict = {  # ToDo: DateTimeOriginal, e.g. "2018:08:26 15:56:09"
-        "File Modification Date/Time": ["-FileModifyDate", target_date_time_str],
-        "File Creation Date/Time": ["-FileCreateDate", target_date_time_str],
-        "Creation Date": ["-CreationDate", target_date_time_str],
-        "Media Create Date": ["-MediaCreateDate", target_date_time_adj_str],
-        "Media Modify Date": ["-MediaModifyDate", target_date_time_adj_str],
-        "Create Date": ["-CreateDate", target_date_time_adj_str],
-        "Modify Date": ["-ModifyDate", target_date_time_adj_str],
-        "Track Create Date": ["-TrackCreateDate", target_date_time_adj_str],
-        "Track Modify Date": ["-TrackModifyDate", target_date_time_adj_str],
-        "Make": ["-Make", ""],
-        "Model": ["-Model", ""],
-        "Software": ["-Software", ""],
-        "Rotation": ["-Rotation", ""],
-        "Camera Model Name": ["-Model", ""],
-        "Exposure Time": ["-ExposureTime", ""],
-        "F Number": ["-FNumber", ""],
-        "Exposure Program": ["-ExposureProgram", ""],
-        "ISO": ["-ISO", ""],
-        "Max Aperture Value": ["-MaxApertureValue", ""],
-        "Metering Mode": ["-MeteringMode", ""],
-        "Light Source": ["-LightSource", ""],
-        "Flash": ["-Flash", ""],
+    metadata_to_use_dict = {  # ToDo: check excel red attributes and implement special logic for them
+        "DateTimeOriginal": original_date,
+        "FileModifyDate": original_date,
+        "FileCreateDate": original_date,
+        "CreationDate": original_date,
+        "MediaCreateDate": original_date_tz,
+        "MediaModifyDate": original_date_tz,
+        "CreateDate": original_date_tz,
+        "ModifyDate": original_date_tz,
+        "TrackCreateDate": original_date_tz,
+        "TrackModifyDate": original_date_tz,
+       # "CompressorName": video_codec,  # not writeable :(
+        "AccelerometerX": "",
+        "AccelerometerY": "",
+        "AccelerometerZ": "",
+        "AccessorySerialNumber": "",
+        "AccessoryType": "",
+        "AdvancedSceneMode": "",
+        "AdvancedSceneType": "",
+        "AESetting": "",
+        "AFAreaMode": "",
+        "AFPoint": "",
+        "Aperture": "",
+        "ApertureValue": "",
+        "AspectRatio": "",
+        "Audio": "",
+        # If audio compression is ever supported, AudioAvgBitrate and AudioBitrate must be disabled when compression is active.
+        # (currently not supported due to minimal impact)
+        "AudioAvgBitrate  ": "",
+        "AudioBitrate": "",
+        "AutoISO": "",
+        "AutoRotate": "",
+        "AvgBytesPerSec": "",
+        "BitsPerSample": "",
+        "BlueBalance": "",
+        "BMPVersion": "",
+        "CameraISO": "",
+        "CameraOrientation": "",
+        "CameraTemperature": "",
+        "CameraType": "",
+        "CanonExposureMode": "",
+        "CanonFirmwareVersion": "",
+        "CanonImageSize": "",
+        "CanonImageType": "",
+        "CanonModelID": "",
+        "CircleOfConfusion": "",
+        "CleanApertureDimensions": "",
+        "ClearRetouch": "",
+        "ClearRetouchValue": "",
+        "ColorComponents": "",
+        "ColorEffect": "",
+        "ColorRepresentation": "",
+        "ColorSpace": "",
+        "ColorTempKelvin": "",
+        "ComAndroidVersion": "",
+        "ComApplePhotosOriginatingSignatur": "",
+        "ContinuousDrive": "",
+        "Contrast": "",
+        "ContrastMode": "",
+        "ControlMode": "",
+        "ConversionLens": "",
+        "DiffractionCorrection": "",
+        "DigitalZoom": "",
+        "DigitalZoomRatio": "",
+        "DOF": "",
+        "DriveMode": "",
+        "ExifImageHeight": "",
+        "ExifImageWidth": "",
+        "ExposureCompensation": "",
+        "ExposureMode": "",
+        "ExposureProgram": "",
+        "ExposureTime": "",
+        "FileSource": "",
+        "FirmwareRevision": "",
+        "FirmwareVersion": "",
+        "FNumber": "",
         # ToDo Not a floating point number for ExifIFD:FocalLength
-        "Focal Length": ["-FocalLength", ""],
-        "Image Quality": ["-ImageQuality", ""],
-        "Firmware Version": ["-FirmwareVersion", ""],
-        "White Balance": ["-WhiteBalance", ""],
-        "Focus Mode": ["-FocusMode", ""],
-        "AF Area Mode": ["-AFAreaMode", ""],
-        "Image Stabilization": ["-ImageStabilization", ""],
-        "Macro Mode": ["-MacroMode", ""],
-        "Shooting Mode": ["-ShootingMode", ""]
+        "FocalLength": "",
+        "FocalLength35efl": "",
+        "FocalLengthIn35mmFormat": "",
+        "FocalPlaneResolutionUnit": "",
+        "FocalPlaneXResolution": "",
+        "FocalPlaneXSize": "",
+        "FocalPlaneYResolution": "",
+        "FocalPlaneYSize": "",
+        "FocalType": "",
+        "FocalUnits": "",
+        "FocusContinuous": "",
+        "FocusDistanceLower": "",
+        "FocusDistanceUpper": "",
+        "FocusMode": "",
+        "FocusRange": "",
+        "Format": "",
+        "FOV": "",
+        "FrameCount": "",
+        "GainControl": "",
+        "GenBalance": "",
+        "GenFlags": "",
+        "GenGraphicsMode": "",
+        "GenMediaVersion": "",
+        "GenOpColor": "",
+        "GPSAltitude": "",
+        "GPSAltitudeRef": "",
+        "GPSCoordinates": "",
+        "GPSLatitude": "",
+        "GPSLongitude": "",
+        "GPSPosition": "",
+        "HDR": "",
+        "HDRShot": "",
+        "HyperfocalDistance": "",
+        "ImageQuality": "",
+        "ImageStabilization": "",
+        "ImageUniqueID": "",
+        "Information": "",
+        "IntelligentContrast": "",
+        "IntelligentD-Range": "",
+        "IntelligentResolution": "",
+        "InternalNDFilter": "",
+        "InternalSerialNumber": "",
+        "ISO": "",
+        "LayoutFlags": "",
+        "Lens": "",
+        "Lens35efl": "",
+        "LensID": "",
+        "LensSerialNumber": "",
+        "LensType": "",
+        "LightSource": "",
+        "LightValue": "",
+        "LongExposureNoiseReduction": "",
+        "MacroMode": "",
+        "Make": "",
+        "MakerNoteVersion": "",
+        "MaxAperture": "",
+        "MaxApertureValue": "",
+        "MaxFocalLength": "",
+        "MeasuredEV": "",
+        "MediaTimeScale": "",
+        "MeteringMode": "",
+        "MinAperture": "",
+        "MinFocalLength": "",
+        "Model": "",
+        "MyColorMode": "",
+        "NDFilter": "",
+        "NoiseReduction": "",
+        "NumAFPoints": "",
+        "NumChannels": "",
+        "NumColors": "",
+        "NumImportantColors": "",
+        "OpticalZoomCode": "",
+        "OpticalZoomMode": "",
+        "Orientation": "",
+        "PhotoStyle": "",
+        "PitchAngle": "",
+        "ProgramISO": "",
+        "Quality": "",
+        "RedBalance": "",
+        "RollAngle": "",
+        "Rotation": "",
+        "Saturation": "",
+        "ScaleFactor35efl": "",
+        "SceneCaptureType": "",
+        "SceneMode": "",
+        "SceneType": "",
+        "SensingMethod": "",
+        "SensitivityType": "",
+        "Sharpness": "",
+        "ShootingMode": "",
+        "ShutterSpeed": "",
+        "ShutterSpeedValue": "",
+        "ShutterType": "",
+        "SlowShutter": "",
+        "Software": "",
+        "SpotMeteringMode": "",
+        "TargetAperture": "",
+        "TargetExposureTime": "",
+        "TimeLapseShotNumber": "",
+        "TimeScale": "",
+        "TimeSincePowerOn": "",
+        "TouchAE": "",
+        "Vendor": "",
+        "VendorID": "",
+        "WBBlueLevel": "",
+        "WBGreenLevel": "",
+        "WBRedLevel": "",
+        "WBShiftAB": "",
+        "WBShiftCreativeControl": "",
+        "WBShiftGM": "",
+        "WBShiftIntelligentAuto": "",
+        "WhiteBalance": "",
+        "WorldTimeLocation": "",
+        "YCbCrPositioning": "",
+        "YCbCrSubSampling": ""
     }
     # handler_vendor_id = metadata["Handler Vendor ID"] # not writeable :(
     # list to join to create the final command string in the end
     stringbuilder = ["exiftool"]
 
     for key, value in metadata_to_use_dict.items():
-        if (key in metadata):
-            stringbuilder.append(value[0] + '="' + (metadata[key] if value[1] == "" else value[1]) + '"')
+        if value > "":
+            stringbuilder.append("-" + key + '="' + value)
+        elif (key in metadata_dict):
+            stringbuilder.append("-" + key + '="' + (metadata_dict[key] if value == "" else value) + '"')
+            #ToDo: Logik noch nicht korrekt angepasst. String wird falsch zusammengesetzt
 
     # prevents creation of _original file
     stringbuilder.append("-overwrite_original")
@@ -197,12 +356,8 @@ def set_metadata(movie_path, metadata):
     subprocess.check_call(command)
 
 
-# metadata = get_metadata(movie_path_in)
-# original_date_dict = get_original_date_and_tz_offset(metadata)
-# print(original_date_dict)
-
-movie_path_out = compress_movie(movie_path_in, crf=20, speed="veryslow")  # , "23", "slow")
-#set_metadata(movie_path_out, metadata)
-
-# print(metadata)
-# print(metadata["file Modification Date/Time"])
+metadata_dict = get_metadata(movie_path_in)
+original_date_dict = get_original_date_and_tz_offset(metadata_dict)
+compression_output_dict = compress_movie(movie_path_in)
+movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
+set_metadata(movie_path_out, metadata_dict, original_date_dict)
