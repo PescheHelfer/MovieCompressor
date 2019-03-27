@@ -3,10 +3,11 @@ import re
 import os
 from datetime import datetime, timezone  # , timedelta
 
-movie_path_in: str = r"f:\TestMovies\CameraTest\OlympusC70Z\PA070030.MOV"
+movie_path_in: str = r"f:\TestMovies\CameraTest\CanonG12\MVI_4929.MOV"
 movie_path_out: str = ""
 video_codec: str = ""
 
+# More info on Exif Tags: https://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/
 # ToDo: Folder or File as Input Paramter. If Folder is passed: process all movie files, otherwise only single movie
 # IDEA: (Optional) as default: use folder from which script is called
 # IDEA: Implement some kind of progress bar, at least when looping through file list
@@ -25,7 +26,10 @@ def get_metadata(movie_path):
 
     # get metadata using exiftools (needs to be installed and available in %path%)
     p1 = subprocess.Popen(
-        ["exiftool", "-s", metadata_path],  # -s -> returns tags instead of descriptions
+        ["exiftool", "-s", "--composite", metadata_path],
+        # -s -> returns tags instead of descriptions
+        # --composite -> excludes "calculated tags", that may have the same name as real tags in other cameras and thus lead to mapping problems.
+        # they can't be written anyway - all the information is contained in other tags.
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
     # class "bytes", sequence of bytes, similar to string, but ASCII only and immutable
@@ -155,7 +159,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "ModifyDate": original_date_tz,
         "TrackCreateDate": original_date_tz,
         "TrackModifyDate": original_date_tz,
-       # "CompressorName": video_codec,  # not writeable :(
+        # "CompressorName": video_codec,  # not writeable, but correctly set
         "AccelerometerX": "",
         "AccelerometerY": "",
         "AccelerometerZ": "",
@@ -166,14 +170,12 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "AESetting": "",
         "AFAreaMode": "",
         "AFPoint": "",
-        "Aperture": "",
+        # "Aperture": "", # not writeable, but transferred by FFMPEG
         "ApertureValue": "",
         "AspectRatio": "",
         "Audio": "",
-        # If audio compression is ever supported, AudioAvgBitrate and AudioBitrate must be disabled when compression is active.
-        # (currently not supported due to minimal impact)
-        "AudioAvgBitrate  ": "",
-        "AudioBitrate": "",
+        # "AudioAvgBitrate  ": "", # depending on the format, audio is reencoded. Those values would no longer be correct.
+        # "AudioBitrate": "",
         "AutoISO": "",
         "AutoRotate": "",
         "AvgBytesPerSec": "",
@@ -193,7 +195,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "CleanApertureDimensions": "",
         "ClearRetouch": "",
         "ClearRetouchValue": "",
-        "ColorComponents": "",
+        #"ColorComponents": "", # not writeable
         "ColorEffect": "",
         "ColorRepresentation": "",
         "ColorSpace": "",
@@ -222,7 +224,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "FNumber": "",
         # ToDo Not a floating point number for ExifIFD:FocalLength
         "FocalLength": "",
-        "FocalLength35efl": "",
+        # "FocalLength35efl": "", # not writeable, but transferred by FFMPEG
         "FocalLengthIn35mmFormat": "",
         "FocalPlaneResolutionUnit": "",
         "FocalPlaneXResolution": "",
@@ -257,17 +259,17 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "ImageQuality": "",
         "ImageStabilization": "",
         "ImageUniqueID": "",
-        "Information": "",
+        # "Information": "", # not writeable
         "IntelligentContrast": "",
         "IntelligentD-Range": "",
         "IntelligentResolution": "",
         "InternalNDFilter": "",
         "InternalSerialNumber": "",
         "ISO": "",
-        "LayoutFlags": "",
+        #"LayoutFlags": "", # not writeable, transferred by FFMPEG
         "Lens": "",
-        "Lens35efl": "",
-        "LensID": "",
+        #"Lens35efl": "", # not writeable
+        "LensID": "", #Bug: Expected one or more integer values in XMP-aux:LensID (ValueConvInv). Not transferre by FFMPEG!
         "LensSerialNumber": "",
         "LensType": "",
         "LightSource": "",
@@ -280,7 +282,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "MaxApertureValue": "",
         "MaxFocalLength": "",
         "MeasuredEV": "",
-        "MediaTimeScale": "",
+        # "MediaTimeScale": "", # not writeable, recalculated
         "MeteringMode": "",
         "MinAperture": "",
         "MinFocalLength": "",
@@ -310,8 +312,10 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "SensingMethod": "",
         "SensitivityType": "",
         "Sharpness": "",
-        "ShootingMode": "",
-        "ShutterSpeed": "",
+        "ShootingMode": "", #Bug: Can't convert Panasonic:ShootingMode (not in PrintConv), not transferred by FFMPEG!
+        # Problem: Ist ein Composite-Feld, das genau gleich heisst, wie ein Panasonic-Feld, vom Wert her aber nicht mapped
+        # -> Composite-Felder aus den Metadatan ausschliessen?
+        #"ShutterSpeed": "", # not writeable, transferred by FFMPEG
         "ShutterSpeedValue": "",
         "ShutterType": "",
         "SlowShutter": "",
@@ -320,11 +324,11 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "TargetAperture": "",
         "TargetExposureTime": "",
         "TimeLapseShotNumber": "",
-        "TimeScale": "",
+        # "TimeScale": "", # not writeable, recalculated
         "TimeSincePowerOn": "",
         "TouchAE": "",
         "Vendor": "",
-        "VendorID": "",
+        # "VendorID": "", # not writeable. Not so nice: Camera brand replaced by FFMPEG :(
         "WBBlueLevel": "",
         "WBGreenLevel": "",
         "WBRedLevel": "",
@@ -337,13 +341,12 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "YCbCrPositioning": "",
         "YCbCrSubSampling": ""
     }
-    # handler_vendor_id = metadata["Handler Vendor ID"] # not writeable :(
     # list to join to create the final command string in the end
     stringbuilder = ["exiftool"]
 
     for key, value in metadata_to_use_dict.items():
         if value > "":
-            stringbuilder.append("-" + key + '="' + value)
+            stringbuilder.append("-" + key + '="' + value + '"')
         elif (key in metadata_dict):
             stringbuilder.append("-" + key + '="' + (metadata_dict[key] if value == "" else value) + '"')
             #ToDo: Logik noch nicht korrekt angepasst. String wird falsch zusammengesetzt

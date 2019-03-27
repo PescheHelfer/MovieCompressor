@@ -2,9 +2,9 @@
 Todo:
   ✔ Bei .mov vom I-Phone gibt es tatsächlich eine Stunde Differenz zwischen "Änderungsdatum" und "Medium erstellt", z.B. bei IMG_E0095_c.MOV. Achtung: Im Sommer sind es 2 h Offset! @done(19-03-19 21:53)
   ✔ Ab verlässlichsten und einheitlichsten scheinen das "CreationDate" (iPhone), "DateTimeOriginal" (andere) und "FileModifyDate" zu sein. -> Wenn vorhanden, das CreationDate verwenden, nur sonst das MinimalDate. @done(19-03-19 21:53)
-  ☐ @high Weitere Exif-Daten übernehmen (Panasonic speichert einiges ab, siehe EXIF_Data.txt)
+  ✔ @high Weitere Exif-Daten übernehmen (Panasonic speichert einiges ab, siehe EXIF_Data.txt) @done(19-03-26 21:47)
   ✔ Get Timezone and add it back to the dates that use  (ausschliesslich aus dem FileModifyDate oder Apples CreationDate! (bei Apple aus dem jeweils kleineren)) @done(19-03-19 21:53)
-  ☐ @critical metadata_to_use_dict in set_metadata() so anpassen, dass mit Tags statt Description umgegangen werden kann
+  ✔ @critical metadata_to_use_dict in set_metadata() so anpassen, dass mit Tags statt Description umgegangen werden kann @done(19-03-25 22:06)
   ☐ @low Metadaten in Flatfile auslagern, aber nur jene, die keine zusätzliche Logik benötigen (also z.B. nicht die Datumsfelder)
   ☐ @low Im Metadaten-Flatfile mit Flag definieren, ob Feld auch befüllt werden soll, wenn im Original nicht vorhanden, neu aber ein Wert vorhanden ist (z.B. die meisten Datumsangaben aber nicht alle)
   ✔ Von allen Datumsfeldern den kleinsten Wert nehmen (der bei edierten Movies nicht immer das ModifyDate sein muss) @done(19-03-19 21:54)
@@ -18,6 +18,9 @@ Todo:
   ✔ Wahlweise x264 oder x265 @done(19-03-22 22:02)
   ✔ Default für x264: CRF25 veryslow @done(19-03-22 22:02)
   ✔ Default für x265: CRF26 slow @done(19-03-22 22:02)
+  ☐ Audio format was changed for Olympus: Audio Bits Per Sample: 8	-> 16, Audio Format: raw -> mp4a -> Read Docu, under which circumstances audio is rencoded!
+
+
   
 Ideas:  
   ☐ @low Proper Docstrings using Autodocstring
