@@ -3,7 +3,7 @@ import re
 import os
 from datetime import datetime, timezone  # , timedelta
 
-movie_path_in: str = r"f:\TestMovies\CameraTest\CanonG12\MVI_4929.MOV"
+movie_path_in: str = r"f:\TestMovies\CameraTest\CanonG11\MVI_0297.MOV"
 movie_path_out: str = ""
 video_codec: str = ""
 
@@ -148,7 +148,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
     original_date = original_date_dict["original_date"]  # w/ timezone
     original_date_tz = original_date_dict["original_date_tz"]  # w/o timezone
 
-    metadata_to_use_dict = {  # ToDo: check excel red attributes and implement special logic for them
+    metadata_to_use_dict = {
         "DateTimeOriginal": original_date,
         "FileModifyDate": original_date,
         "FileCreateDate": original_date,
@@ -197,7 +197,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "ClearRetouchValue": "",
         #"ColorComponents": "", # not writeable
         "ColorEffect": "",
-        "ColorRepresentation": "",
+        #"ColorRepresentation": "", # Can't convert IPTC:ColorRepresentation (not in PrintConv): 'nclx 1 1 1'  (does not exist in database)
         "ColorSpace": "",
         "ColorTempKelvin": "",
         "ComAndroidVersion": "",
@@ -269,7 +269,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         #"LayoutFlags": "", # not writeable, transferred by FFMPEG
         "Lens": "",
         #"Lens35efl": "", # not writeable
-        "LensID": "", #Bug: Expected one or more integer values in XMP-aux:LensID (ValueConvInv). Not transferre by FFMPEG!
+        "LensID": "",
         "LensSerialNumber": "",
         "LensType": "",
         "LightSource": "",
@@ -283,7 +283,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "MaxFocalLength": "",
         "MeasuredEV": "",
         # "MediaTimeScale": "", # not writeable, recalculated
-        "MeteringMode": "",
+        "MeteringMode": "", 
         "MinAperture": "",
         "MinFocalLength": "",
         "Model": "",
@@ -312,9 +312,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "SensingMethod": "",
         "SensitivityType": "",
         "Sharpness": "",
-        "ShootingMode": "", #Bug: Can't convert Panasonic:ShootingMode (not in PrintConv), not transferred by FFMPEG!
-        # Problem: Ist ein Composite-Feld, das genau gleich heisst, wie ein Panasonic-Feld, vom Wert her aber nicht mapped
-        # -> Composite-Felder aus den Metadatan ausschliessen?
+        "ShootingMode": "",
         #"ShutterSpeed": "", # not writeable, transferred by FFMPEG
         "ShutterSpeedValue": "",
         "ShutterType": "",
@@ -341,6 +339,10 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "YCbCrPositioning": "",
         "YCbCrSubSampling": ""
     }
+
+    # replacement dict to map tag values unknown in the exiftool database to known values
+    metadata_to_replace_dict = {"MeteringMode": ["Evaluative", "Multi-segment"]}
+
     # list to join to create the final command string in the end
     stringbuilder = ["exiftool"]
 
@@ -348,8 +350,10 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         if value > "":
             stringbuilder.append("-" + key + '="' + value + '"')
         elif (key in metadata_dict):
-            stringbuilder.append("-" + key + '="' + (metadata_dict[key] if value == "" else value) + '"')
-            #ToDo: Logik noch nicht korrekt angepasst. String wird falsch zusammengesetzt
+            if (key in metadata_to_replace_dict) and metadata_dict[key] == metadata_to_replace_dict[key][0]:
+                stringbuilder.append("-" + key + '="' + metadata_to_replace_dict[key][1] + '"')
+            else:
+                stringbuilder.append("-" + key + '="' + (metadata_dict[key] if value == "" else value) + '"')
 
     # prevents creation of _original file
     stringbuilder.append("-overwrite_original")
