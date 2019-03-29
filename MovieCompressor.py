@@ -3,7 +3,7 @@ import re
 import os
 from datetime import datetime, timezone  # , timedelta
 
-movie_path_in: str = r"f:\TestMovies\CameraTest\CanonG11\MVI_0297.MOV"
+movie_path_in: str = r"f:\TestMovies\CameraTest\CanonG12\MVI_4929.MOV"
 movie_path_out: str = ""
 video_codec: str = ""
 
@@ -280,12 +280,12 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "MakerNoteVersion": "",
         "MaxAperture": "",
         "MaxApertureValue": "",
-        "MaxFocalLength": "",
+        "MaxFocalLength": "", # not set, bug in EXIFTOOL or possible not writeable (silently)
         "MeasuredEV": "",
         # "MediaTimeScale": "", # not writeable, recalculated
         "MeteringMode": "", 
         "MinAperture": "",
-        "MinFocalLength": "",
+        "MinFocalLength": "", # not set, bug in EXIFTOOL or possible not writeable (silently)
         "Model": "",
         "MyColorMode": "",
         "NDFilter": "",

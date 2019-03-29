@@ -18,7 +18,11 @@ Todo:
   ✔ Wahlweise x264 oder x265 @done(19-03-22 22:02)
   ✔ Default für x264: CRF25 veryslow @done(19-03-22 22:02)
   ✔ Default für x265: CRF26 slow @done(19-03-22 22:02)
-  ☐ Audio format was changed for Olympus: Audio Bits Per Sample: 8	-> 16, Audio Format: raw -> mp4a -> Read Docu, under which circumstances audio is rencoded!
+  ☐ @low Audio format was changed for Olympus: Audio Bits Per Sample: 8	-> 16, Audio Format: raw -> mp4a -> Read Docu, under which circumstances audio is rencoded!
+  ☐ @high Change command to get group names: exiftool -G1 -t  f:\TestMovies\CameraTest\CanonG12\MVI_4929.MOV -> Total Format change!!
+  ☐ @high Set extracted group names together with tag: -EXIF:CreateDate
+  ☐ @high metadata_to_use_dict: ignore group names here: several brands may use the same tag. Don't want to add them for every single brand!
+  ☐ @high Group names may need to be included in the predefined date tags (within metadata_to_use_dict) -> make separate dict for that?
 
 
   
