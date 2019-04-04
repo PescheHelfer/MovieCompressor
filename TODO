@@ -19,14 +19,24 @@ Todo:
   ✔ Default für x264: CRF25 veryslow @done(19-03-22 22:02)
   ✔ Default für x265: CRF26 slow @done(19-03-22 22:02)
   ☐ @low Audio format was changed for Olympus: Audio Bits Per Sample: 8	-> 16, Audio Format: raw -> mp4a -> Read Docu, under which circumstances audio is rencoded!
-  ☐ @high Change command to get group names: exiftool -G1 -t  f:\TestMovies\CameraTest\CanonG12\MVI_4929.MOV -> Total Format change!!
-  ☐ @high Set extracted group names together with tag: -EXIF:CreateDate
-  ☐ @high metadata_to_use_dict: ignore group names here: several brands may use the same tag. Don't want to add them for every single brand!
-  ☐ @high Group names may need to be included in the predefined date tags (within metadata_to_use_dict) -> make separate dict for that?
+  ✔ @high Change command to get group names: exiftool -G1 -t  f:\TestMovies\CameraTest\CanonG12\MVI_4929.MOV -> Total Format change!! @done(19-04-04 22:19)
+  ✔ @high Set extracted group names together with tag: -EXIF:CreateDate @done(19-04-04 22:19)
+  ✔ @high metadata_to_use_dict: ignore group names here: several brands may use the same tag. Don't want to add them for every single brand! @done(19-04-04 22:20)
+  ✔ @high Group names may need to be included in the predefined date tags (within metadata_to_use_dict) -> make separate dict for that? @done(19-04-04 22:20)
+  ✔ @high Makernotes (Canon group) are not yet writable in movies (w/o error). Some tags are converted the group XMP-exif, but only if the Canon group is not forced @done(19-04-04 22:20)
+  ✔ @high First try to add the group tags, then check which tags have NOT been written (included in the output list but missing in the output file) and write them again not using the group @done(19-04-04 22:20)
 
-
-  
+ 
 Ideas:  
   ☐ @low Proper Docstrings using Autodocstring
   ☐ @low Parameter validition e.g. by using dictionaries or when calling it from cmd
   ☐ @low Parameter typing: https://mypy.readthedocs.io/en/latest/cheat_sheet_py3.html
+
+
+Notes:
+  • MKV is not yet writable by EXIFTOOL (error message).
+  • MOV and MP4 are partially writable. Only XMP tags are written. Tags from the canon group etc. (makernotes) are only written if they have a corresponding XMP-tag.
+  • For MOV and MP4, there is no error message that some tags have not been written.
+  • http://u88.n24.queensu.ca/exiftool/forum/index.php/topic,10001.msg52030.html#msg52030
+  • My way of trying to add makernotes to the appropriate group is currently futile, as no video container is supported that way by EXIFTOOL.
+    This may change with newer versions of EXIFTOOL.

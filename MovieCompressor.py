@@ -1,5 +1,4 @@
 import subprocess
-import re
 import os
 from datetime import datetime, timezone  # , timedelta
 
@@ -26,7 +25,7 @@ def get_metadata(movie_path):
 
     # get metadata using exiftools (needs to be installed and available in %path%)
     p1 = subprocess.Popen(
-        ["exiftool", "-s", "--composite", metadata_path],
+        ["exiftool", "-s", "-G1", "-t", "--composite", metadata_path],
         # -s -> returns tags instead of descriptions
         # --composite -> excludes "calculated tags", that may have the same name as real tags in other cameras and thus lead to mapping problems.
         # they can't be written anyway - all the information is contained in other tags.
@@ -34,11 +33,10 @@ def get_metadata(movie_path):
         stderr=subprocess.PIPE)
     # class "bytes", sequence of bytes, similar to string, but ASCII only and immutable
     metadata_str = p1.communicate()[0].decode("utf-8")
-    # regex to remove whitespace after the key (before the colon)
-    rx = re.compile("\W+\: ")
-    metadata_list = [rx.sub(": ", item) for item in metadata_str.split("\r\n")]
-    # the last item is an " and can"t be split
-    metadata_dict = dict(item.split(": ", maxsplit=1) for item in metadata_list[:-1])
+    test_list2D = tuplelist = [[4, 180, 21], [5, 90, 10], [3, 270, 8], [4, 0, 7]]
+    metadata_list2D = list(item.split("\t", ) for item in metadata_str.split("\r\n")[:-1])  # last element is empty -> remove
+    metadata_dict = {b: (a, c) for a, b, c in metadata_list2D}
+    # {Tag:(group, value)} -> dictionary containing a tuple
     return metadata_dict
 
 
@@ -77,7 +75,7 @@ def get_original_date_and_tz_offset(metadata_dict):
     # Sonst aus dem "FileModifyDate" übernehmen.
 
     # parse strings and remove timezone to avoid error: TypeError("can"t compare offset-naive and offset-aware datetimes")
-    dates_dict = {k: try_parse_date(v) for (k, v) in metadata_dict.items()}
+    dates_dict = {k: try_parse_date(v[1]) for (k, v) in metadata_dict.items()}
     dates_dict_tz_removed = {k: v.replace(tzinfo=None) for (k, v) in dates_dict.items() if v is not None}
     dates_dict_tz = {k: v for (k, v) in dates_dict.items() if v is not None if v.tzinfo is not None if v.tzinfo.utcoffset(v) is not None}
 
@@ -127,7 +125,7 @@ def compress_movie(movie_path, codec="x265", crf="", speed=""):
     # 25 best for x264, 26 equal quality for x265
     preset_ = (" -preset " + speed) if str(speed) != "" and speed != None else " -preset veryslow" if codec == "x264" else " -preset slow"
     movie_lst = os.path.splitext(movie_path)
-    movie_cmp = movie_lst[0] + "c" + movie_lst[1]
+    movie_cmp = movie_lst[0] + "c" + movie_lst[1]  #".MP4" #movie_lst[1]
     command = 'ffmpeg -i "{0}" -c:v {1} -crf {2}{3} -map_metadata 0 "{4}"'.format(movie_path, codec_, crf_, preset_, movie_cmp)
     # -i              -> input file(s)
     # -c:v            -> select video encoder
@@ -148,7 +146,7 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
     original_date = original_date_dict["original_date"]  # w/ timezone
     original_date_tz = original_date_dict["original_date_tz"]  # w/o timezone
 
-    metadata_to_use_dict = {
+    metadata_predef_dict = {
         "DateTimeOriginal": original_date,
         "FileModifyDate": original_date,
         "FileCreateDate": original_date,
@@ -158,8 +156,11 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "CreateDate": original_date_tz,
         "ModifyDate": original_date_tz,
         "TrackCreateDate": original_date_tz,
-        "TrackModifyDate": original_date_tz,
+        "TrackModifyDate": original_date_tz
         # "CompressorName": video_codec,  # not writeable, but correctly set
+    }
+
+    metadata_to_use_dict = {
         "AccelerometerX": "",
         "AccelerometerY": "",
         "AccelerometerZ": "",
@@ -280,12 +281,12 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "MakerNoteVersion": "",
         "MaxAperture": "",
         "MaxApertureValue": "",
-        "MaxFocalLength": "", # not set, bug in EXIFTOOL or possible not writeable (silently)
+        "MaxFocalLength": "",  # not set, bug in EXIFTOOL or possible not writeable (silently)
         "MeasuredEV": "",
         # "MediaTimeScale": "", # not writeable, recalculated
-        "MeteringMode": "", 
+        "MeteringMode": "",
         "MinAperture": "",
-        "MinFocalLength": "", # not set, bug in EXIFTOOL or possible not writeable (silently)
+        "MinFocalLength": "",  # not set, bug in EXIFTOOL or possible not writeable (silently)
         "Model": "",
         "MyColorMode": "",
         "NDFilter": "",
@@ -341,19 +342,54 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
     }
 
     # replacement dict to map tag values unknown in the exiftool database to known values
-    metadata_to_replace_dict = {"MeteringMode": ["Evaluative", "Multi-segment"]}
+    metadata_to_replace_dict = {"MeteringMode": ["Evaluative", "Multi-segment"]}  #ToDo: add group
 
     # list to join to create the final command string in the end
     stringbuilder = ["exiftool"]
 
-    for key, value in metadata_to_use_dict.items():
-        if value > "":
+    # dictionary of tags that are supposed to be written
+    metadata_target_dict: {str, str} = {}
+
+    for key, value in metadata_predef_dict.items():
+        if value > "":  # should always be the case
             stringbuilder.append("-" + key + '="' + value + '"')
-        elif (key in metadata_dict):
+            metadata_target_dict[key] = value
+
+    for key, value in metadata_to_use_dict.items():
+        if (key in metadata_dict):
             if (key in metadata_to_replace_dict) and metadata_dict[key] == metadata_to_replace_dict[key][0]:
                 stringbuilder.append("-" + key + '="' + metadata_to_replace_dict[key][1] + '"')
+                metadata_target_dict[key] = metadata_to_replace_dict[key][1]
             else:
-                stringbuilder.append("-" + key + '="' + (metadata_dict[key] if value == "" else value) + '"')
+                stringbuilder.append("-" + metadata_dict[key][0] + ":" + key + '="' + metadata_dict[key][1] + '"')
+                # -group:key=value
+                metadata_target_dict[key] = metadata_dict[key][1]
+
+    # prevents creation of _original file
+    stringbuilder.append("-overwrite_original")
+    stringbuilder.append('"' + movie_path + '"')
+    # note: the space in " " is actually the seperator!
+    command = " ".join(stringbuilder)
+    subprocess.check_call(command)
+    return metadata_target_dict
+
+
+def verify_written_metadata(metadata_target_dict, metadata_written_dict):
+    metadata_missing_dict = {k: v for (k, v) in metadata_target_dict.items() - [(a, c) for a, (b, c) in metadata_written_dict.items()]}
+    # (a,c) for a, (b,c) -> convert (key, (group, value)) to (key, value)
+
+    # print(len(metadata_target_dict))
+    # print(len(metadata_written_dict))
+    # print(len(metadata_missing_dict))
+    return metadata_missing_dict
+
+
+def set_metadata_without_group(movie_path, metadata_missing_dict):
+    stringbuilder = ["exiftool"]
+    stringbuilder.append(" -" + " -".join('{}="{}"'.format(k, v) for (k, v) in metadata_missing_dict.items()))
+    # Returns a generator object which is then joined.
+    # see https://codereview.stackexchange.com/questions/7953/flattening-a-dictionary-into-a-string/7954
+    # {!r} would return single quotes, we need double quotes -> default !s (empty {}) used and surrounded in ""
 
     # prevents creation of _original file
     stringbuilder.append("-overwrite_original")
@@ -367,4 +403,10 @@ metadata_dict = get_metadata(movie_path_in)
 original_date_dict = get_original_date_and_tz_offset(metadata_dict)
 compression_output_dict = compress_movie(movie_path_in)
 movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
-set_metadata(movie_path_out, metadata_dict, original_date_dict)
+#movie_path_out = r"f:\TestMovies\CameraTest\CanonG12\MVI_4929c.MOV"
+metadata_target_dict = set_metadata(movie_path_out, metadata_dict, original_date_dict)
+metadata_written_dict = get_metadata(movie_path_out)
+metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
+set_metadata_without_group(movie_path_out, metadata_missing_dict)
+
+input("Press Enter to exit...")

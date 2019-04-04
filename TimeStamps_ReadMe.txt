@@ -87,4 +87,17 @@ Setting all the tags at once: http://u88.n24.queensu.ca/exiftool/forum/index.php
 -CreateDate
 -ModifyDate
 -TrackCreateDate
--TrackModifyDate
+-TrackModifyDate
+http://owl.phy.queensu.ca/~phil/exiftool/exiftool_pod.html#item__2dtagsfromfile_srcfile_or_fmt
+http://owl.phy.queensu.ca/~phil/exiftool/exiftool_pod.html#READING-EXAMPLES
+Transfer all from file, try:
+exiftool -TagsFromFile srcimage.jpg "-all:all>all:all" targetimage.jpg
+exiftool -TagsFromFile srcimage.jpg targetimage.jpg
+  -x TAG      (-exclude)           Exclude specified tag
+  
+  exiftool -TagsFromFile src.jpg -all:all dst.jpg
+
+    Copy the values of all writable tags from src.jpg to dst.jpg, preserving the original tag groups.
+    
+--> Tried all that. Only the using -TagsFromFile without options results in a comparable number of tags to my tool, but without groups
+--> Continue with my tool.
