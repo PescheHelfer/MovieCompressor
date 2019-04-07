@@ -2,15 +2,7 @@ import subprocess
 import os
 from datetime import datetime, timezone  # , timedelta
 
-movie_path_in: str = r"f:\TestMovies\CameraTest\CanonG12\MVI_4928.MOV"
-movie_path_out: str = ""
-video_codec: str = ""
-
 # More info on Exif Tags: https://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/
-# ToDo: Folder or File as Input Paramter. If Folder is passed: process all movie files, otherwise only single movie
-# IDEA: (Optional) as default: use folder from which script is called
-# IDEA: Implement some kind of progress bar, at least when looping through file list
-# DONE: Erstellen von _original unterdrücken
 
 
 def get_metadata(movie_path):
@@ -20,7 +12,7 @@ def get_metadata(movie_path):
     movie_lst = os.path.splitext(movie_path)
     metadata_path = movie_lst[0] + ".thm"
 
-    if not os.path.isfile(metadata_path):
+    if not os.path.isfile(metadata_path): #ToDo: What happens with captial .THM?
         metadata_path = movie_path
 
     # get metadata using exiftools (needs to be installed and available in %path%)
@@ -153,7 +145,9 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # 25 best for x264, 26 equal quality for x265
     preset_ = (" -preset " + speed) if str(speed) != "" and speed != None else " -preset veryslow" if codec == "x264" else " -preset slow"
     movie_lst = os.path.splitext(movie_path)
-    movie_cmp = movie_lst[0] + "c" + movie_lst[1]  #".MP4" #movie_lst[1]
+
+    # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
+    movie_cmp = movie_lst[0] + "c" + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
     command = 'ffmpeg{0} -i "{1}"{2} -c:v {3} -crf {4}{5} -map_metadata 0 "{6}"'.format(ss_, movie_path, t_, codec_, crf_, preset_, movie_cmp)
     # -i              -> input file(s)
     # -c:v            -> select video encoder
@@ -437,13 +431,36 @@ def set_metadata_without_group(movie_path, metadata_missing_dict):
     subprocess.check_call(command)
 
 
-metadata_dict = get_metadata(movie_path_in)
-original_date_dict = get_original_date_and_tz_offset(metadata_dict)
-compression_output_dict = compress_movie(movie_path_in, clip_from="", clip_to="")  # clip_from = "00:00:04", clip_to= "00:00:06"
-# movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
-# metadata_target_dict = set_metadata(movie_path_out, metadata_dict, original_date_dict)
-# metadata_written_dict = get_metadata(movie_path_out)
-# metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
-# set_metadata_without_group(movie_path_out, metadata_missing_dict)
+def process_movie(movie_path, clip_from, clip_to, codec, crf, speed):  # clip_from = "00:00:04", clip_to= "00:00:06"
+
+    movie_path_in: str
+    movie_path_out: str = ""
+    video_codec: str = ""
+
+    metadata_dict = get_metadata(movie_path)
+    original_date_dict = get_original_date_and_tz_offset(metadata_dict)
+    compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed)
+    movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
+    metadata_target_dict = set_metadata(movie_path_out, metadata_dict, original_date_dict)
+    metadata_written_dict = get_metadata(movie_path_out)
+    metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
+    set_metadata_without_group(movie_path_out, metadata_missing_dict)
+
+
+def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed=""):  # clip_from = "00:00:04", clip_to= "00:00:06"
+    """movie path is file: compresses the single movie and adds as much metadata from the original as possible\r\n
+    movie path is directory: compresses all movies in the directory and adds as much metadata from the originals as possible"""
+
+    if os.path.isdir(movie_path):
+        for file in os.listdir(movie_path):
+            file_lst = os.path.splitext(file)
+            if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"]:
+                process_movie(os.path.join(movie_path, file), clip_from, clip_to, codec, crf, speed)
+    else:
+        process_movie(movie_path, clip_from, clip_to, codec, crf, speed)
+
+
+input_path = r"f:\TestMovies\FolderTest"
+process_movies(input_path)
 
 input("Press Enter to exit...")

@@ -33,6 +33,8 @@ Ideas:
   ☐ @low Proper Docstrings using Autodocstring
   ☐ @low Parameter validition e.g. by using dictionaries or when calling it from cmd
   ☐ @low Parameter typing: https://mypy.readthedocs.io/en/latest/cheat_sheet_py3.html
+  ☐ @low as default: use folder from which script is called
+  ☐ @low: Implement some kind of progress bar, at least when looping through file list
 
 
 Notes:
