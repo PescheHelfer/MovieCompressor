@@ -2,7 +2,7 @@ import subprocess
 import os
 from datetime import datetime, timezone  # , timedelta
 
-movie_path_in: str = r"f:\TestMovies\CameraTest\CanonG12\MVI_4929.MOV"
+movie_path_in: str = r"f:\TestMovies\CameraTest\CanonG12\MVI_4928.MOV"
 movie_path_out: str = ""
 video_codec: str = ""
 
@@ -56,6 +56,22 @@ def try_parse_date(string):
         pass
     try:
         return datetime.strptime(string, "%Y:%m:%d %H:%M:%S%z")
+    except ValueError:
+        return None
+
+
+def try_parse_time(string):
+    """Converts a datetime from a string of three formats"""  # and returns a datetime object of the format %Y:%m:%d %H:%M:%S"""
+    # Formats to parse:
+    # - "15:56:09.798"
+    # - "14:56:09"
+
+    try:
+        return datetime.strptime(string, "%H:%M:%S.%f")
+    except ValueError:
+        pass
+    try:
+        return datetime.strptime(string, "%H:%M:%S")
     except ValueError:
         return None
 
@@ -118,23 +134,45 @@ def get_original_date_and_tz_offset(metadata_dict):
     return {"original_date": original_date.strftime("%Y:%m:%d %H:%M:%S"), "original_date_tz": original_date_tz}
 
 
-def compress_movie(movie_path, codec="x265", crf="", speed=""):
+def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed=""):
     """Compress movie with x265, crf 26 slow (default) or x264 crf 25 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
+
+    # parse clipping information
+    ss_ = "" if clip_from == None or clip_from == "" else (" -ss " + clip_from)
+    if clip_to != None and clip_to != "":
+        t1 = try_parse_time(("00:00:00" if clip_from == None else clip_from))
+        t2 = try_parse_time(clip_to)
+        delta = t2 - t1
+        t_ = " -t " + '{:d}.{:d}'.format(delta.seconds, int(delta.microseconds / 1000))  # -> see https://pyformat.info/#string_truncating
+    # int(/1000) to only return .600 intead of .600000
+    else:
+        t_ = ""
+
     codec_ = "libx265" if codec.lower() == "x265" else "libx264" if codec.lower() == "x264" else codec
     crf_ = str(crf) if str(crf) != "" and crf != None else "26" if codec == "x265" else "25"
     # 25 best for x264, 26 equal quality for x265
     preset_ = (" -preset " + speed) if str(speed) != "" and speed != None else " -preset veryslow" if codec == "x264" else " -preset slow"
     movie_lst = os.path.splitext(movie_path)
     movie_cmp = movie_lst[0] + "c" + movie_lst[1]  #".MP4" #movie_lst[1]
-    command = 'ffmpeg -i "{0}" -c:v {1} -crf {2}{3} -map_metadata 0 "{4}"'.format(movie_path, codec_, crf_, preset_, movie_cmp)
+    command = 'ffmpeg{0} -i "{1}"{2} -c:v {3} -crf {4}{5} -map_metadata 0 "{6}"'.format(ss_, movie_path, t_, codec_, crf_, preset_, movie_cmp)
     # -i              -> input file(s)
     # -c:v            -> select video encoder
     # -c:a            -> select audio encoder (skipping this will simply copy the audio stream without reencoding)
     # -crf            -> Change the CRF value for video. Lower means better quality. 23 is default, and anything below 18 will probably be visually lossless
     # -preset slower  -> slower settings have better quality:compression ratios. Each step about doubles the processing time!
     # -map_metadata 0 -> Map the metadata from file 0 to the output
+    # -ss 00:01:00 before -i -> fast seek, start of cut
+    # -to 00:02:00 with -copyts -> cut till time in original movie
+    # -copyts         -> makes -to correspond to time in original movie, without it, the reference would be the new start defined by -ss
+    #                    (-ss + -to would would correspond to the end cut of the original movie)
+    #                    Note: Works as indicated, but leads to wrong times being shown in VLC: e.g. if the original movie was cut from 2 to 4 sec,
+    #                    VLC will start showing 0 sec and end showing 4 sec, while actually only sec were played
+    #                    Omitting -copyts solves this problem, but requires calculation of the proper -to parameter:
+    #                    -to = desired -to minus -ss
     # https://trac.ffmpeg.org/wiki/Encode/H.264
     # http://trac.ffmpeg.org/wiki/Encode/AAC
+    # http://ffmpeg.org/ffmpeg-all.html
+    # https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
     subprocess.check_call(command)
     #print(command)
     return {"movie_path_out": movie_cmp, "codec": codec.upper()}
@@ -401,12 +439,11 @@ def set_metadata_without_group(movie_path, metadata_missing_dict):
 
 metadata_dict = get_metadata(movie_path_in)
 original_date_dict = get_original_date_and_tz_offset(metadata_dict)
-compression_output_dict = compress_movie(movie_path_in)
-movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
-#movie_path_out = r"f:\TestMovies\CameraTest\CanonG12\MVI_4929c.MOV"
-metadata_target_dict = set_metadata(movie_path_out, metadata_dict, original_date_dict)
-metadata_written_dict = get_metadata(movie_path_out)
-metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
-set_metadata_without_group(movie_path_out, metadata_missing_dict)
+compression_output_dict = compress_movie(movie_path_in, clip_from="", clip_to="")  # clip_from = "00:00:04", clip_to= "00:00:06"
+# movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
+# metadata_target_dict = set_metadata(movie_path_out, metadata_dict, original_date_dict)
+# metadata_written_dict = get_metadata(movie_path_out)
+# metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
+# set_metadata_without_group(movie_path_out, metadata_missing_dict)
 
 input("Press Enter to exit...")

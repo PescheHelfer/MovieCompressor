@@ -10,15 +10,17 @@ Todo:
   ✔ Von allen Datumsfeldern den kleinsten Wert nehmen (der bei edierten Movies nicht immer das ModifyDate sein muss) @done(19-03-19 21:54)
   ☐ Mit Avi und MPEG testen
   ✔ Prüfen ob es ein thm-File gibt, wenn ja, Metadatan daraus einlesen @done(19-03-19 22:09)
-  ☐ @high Möglichkeit der Videobeschneidung einbauen (Start, Stop)
+  ✔ @high Möglichkeit der Videobeschneidung einbauen (Start, Stop) @done(19-04-07 13:56)
   https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
   The following would clip the first 30 seconds, and then clip everything that is 10 seconds after that:
-  ffmpeg -ss 00:00:30.0 -i input.wmv -c copy -t 00:00:10.0 output.wmv
-  You can use -to instead of -t to specify the timestamp to which you want to cut. So, instead of -i <input> -ss 30 -t 10 you could also do -i <input> -ss 30 -to 40 to achieve the same thing.
+  https://trac.ffmpeg.org/wiki/Seeking
+  ffmpeg -ss 00:01:00 -i video.mp4 -to 00:02:00 -c copy -copyts cut.mp4
   ✔ Wahlweise x264 oder x265 @done(19-03-22 22:02)
   ✔ Default für x264: CRF25 veryslow @done(19-03-22 22:02)
   ✔ Default für x265: CRF26 slow @done(19-03-22 22:02)
   ☐ @low Audio format was changed for Olympus: Audio Bits Per Sample: 8	-> 16, Audio Format: raw -> mp4a -> Read Docu, under which circumstances audio is rencoded!
+  -c:a copy OUTPUT would prevent encoding of audio, but is that wanted? What is the default audio encoding?
+  when cutting up the video, audio and video may need to be reencoded to avoid choppy/out of sync playback
   ✔ @high Change command to get group names: exiftool -G1 -t  f:\TestMovies\CameraTest\CanonG12\MVI_4929.MOV -> Total Format change!! @done(19-04-04 22:19)
   ✔ @high Set extracted group names together with tag: -EXIF:CreateDate @done(19-04-04 22:19)
   ✔ @high metadata_to_use_dict: ignore group names here: several brands may use the same tag. Don't want to add them for every single brand! @done(19-04-04 22:20)

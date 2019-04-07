@@ -40,4 +40,29 @@ P1090370x265_crf28_slow.MP4 slow
 -> deutlichere Einbussen in Wandstruktur und Haut
 -> 50% kleiner
 
-==> CRF 26 slow
+==> CRF 26 slow
+Cutting Test
+
+Goal: Cut movie from 02.500 to 04.400
+ffmpeg -ss 00:00:02.500 -i "f:\TestMovies\CameraTest\CanonG12\MVI_4928.MOV" -to 00:00:04.400 -c:v libx265 -crf 25 -preset fast -copyts "f:\TestMovies\CameraTest\CanonG12\MVI_4928_cut.MOV"
+ffmpeg -ss 00:00:02.500 -i "f:\TestMovies\CameraTest\CanonG12\MVI_4928.MOV" -to 00:00:01.900 -c:v libx265 -crf 25 -preset fast "f:\TestMovies\CameraTest\CanonG12\MVI_4928_cut.MOV"
+
+ffmpeg -ss 00:00:05.903 -i "f:\TestMovies\P1170339.MP4" -to 00:00:03.903 -c:v libx265 -crf 25 -preset fast "f:\TestMovies\P1170339_cut.MP4"
+-> 5.903 bis 8.903 -> 3 sec
+--> Cut aber erst nach 3.8 sec :(
+
+ffmpeg -ss 00:00:05.903 -i "f:\TestMovies\P1170339.MP4" -t 3 -c:v libx265 -crf 25 -preset fast "f:\TestMovies\P1170339_cut2.MP4"
+--> 3.02 sec
+
+ffmpeg -ss 00:00:05.903 -i "f:\TestMovies\P1170339.MP4" -t 3.5 -c:v libx265 -crf 25 -preset fast "f:\TestMovies\P1170339_cut3.MP4"
+--> 3.52 s
+_--> -t is more precise than -to, but the movie stops shortly before! Must have to do with key frames (cut only possible at key frames?)
+
+ffmpeg -i "f:\TestMovies\P1170339.MP4" -ss 00:00:05.903  -t 3 -c:v libx265 -crf 25 -preset fast "f:\TestMovies\P1170339_cut4.MP4"
+-> exatly the same
+
+ffmpeg -i "f:\TestMovies\P1170339.MP4" -ss 00:00:05.903 -c:v libx265 -crf 25 -preset fast "f:\TestMovies\P1170339_cut4.MP4 -t 3"
+-> illegal
+
+ffmpeg -i "f:\TestMovies\P1170339.MP4" -ss 00:00:05.903 -c:v libx265 -crf 25 -preset fast "f:\TestMovies\P1170339_cut4.MP4 -to 00:00:03.903"
+-> illegal
