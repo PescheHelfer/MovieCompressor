@@ -1,8 +1,7 @@
+import argparse
 import subprocess
 import os
 from datetime import datetime, timezone  # , timedelta
-
-# More info on Exif Tags: https://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/
 
 
 def get_metadata(movie_path):
@@ -12,7 +11,7 @@ def get_metadata(movie_path):
     movie_lst = os.path.splitext(movie_path)
     metadata_path = movie_lst[0] + ".thm"
 
-    if not os.path.isfile(metadata_path): #ToDo: What happens with captial .THM?
+    if not os.path.isfile(metadata_path):  #ToDo: What happens with captial .THM?
         metadata_path = movie_path
 
     # get metadata using exiftools (needs to be installed and available in %path%)
@@ -62,10 +61,24 @@ def try_parse_time(string):
         return datetime.strptime(string, "%H:%M:%S.%f")
     except ValueError:
         pass
+    return datetime.strptime(string, "%H:%M:%S")  # shall fail if invalid time for check_valid_time to work properly
+
+
+def check_valid_time(string):
     try:
-        return datetime.strptime(string, "%H:%M:%S")
+        try_parse_time(string)
+        return string
     except ValueError:
-        return None
+        msg = "Not a valid time: '{0}'.".format(string)
+        raise argparse.ArgumentTypeError(msg)
+
+
+def check_valid_path(path):
+    if os.path.isfile(path) or os.path.isdir(path):
+        return path
+    else:
+        msg = "Not a valid file or directory path: '{0}'.".format(path)
+        raise argparse.ArgumentTypeError(msg)
 
 
 def get_original_date_and_tz_offset(metadata_dict):
@@ -172,25 +185,8 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     return {"movie_path_out": movie_cmp, "codec": codec.upper()}
 
 
-def set_metadata(movie_path, metadata_dict, original_date_dict):
-    """Sets most dates to the file modification date of the original movie and restores make/model information."""
-
-    original_date = original_date_dict["original_date"]  # w/ timezone
-    original_date_tz = original_date_dict["original_date_tz"]  # w/o timezone
-
-    metadata_predef_dict = {
-        "DateTimeOriginal": original_date,
-        "FileModifyDate": original_date,
-        "FileCreateDate": original_date,
-        "CreationDate": original_date,
-        "MediaCreateDate": original_date_tz,
-        "MediaModifyDate": original_date_tz,
-        "CreateDate": original_date_tz,
-        "ModifyDate": original_date_tz,
-        "TrackCreateDate": original_date_tz,
-        "TrackModifyDate": original_date_tz
-        # "CompressorName": video_codec,  # not writeable, but correctly set
-    }
+def set_metadata(movie_path, metadata_dict):
+    """ Restores make/model information. (Currently not possible for most of the cases in movies)"""
 
     metadata_to_use_dict = {
         "AccelerometerX": "",
@@ -255,7 +251,6 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
         "FirmwareRevision": "",
         "FirmwareVersion": "",
         "FNumber": "",
-        # ToDo Not a floating point number for ExifIFD:FocalLength
         "FocalLength": "",
         # "FocalLength35efl": "", # not writeable, but transferred by FFMPEG
         "FocalLengthIn35mmFormat": "",
@@ -382,11 +377,6 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
     # dictionary of tags that are supposed to be written
     metadata_target_dict: {str, str} = {}
 
-    for key, value in metadata_predef_dict.items():
-        if value > "":  # should always be the case
-            stringbuilder.append("-" + key + '="' + value + '"')
-            metadata_target_dict[key] = value
-
     for key, value in metadata_to_use_dict.items():
         if (key in metadata_dict):
             if (key in metadata_to_replace_dict) and metadata_dict[key] == metadata_to_replace_dict[key][0]:
@@ -402,7 +392,15 @@ def set_metadata(movie_path, metadata_dict, original_date_dict):
     stringbuilder.append('"' + movie_path + '"')
     # note: the space in " " is actually the seperator!
     command = " ".join(stringbuilder)
-    subprocess.check_call(command)
+    print("Trying to write makershift tags with groups ...")
+    try:
+        subprocess.check_call(command)  # throws error if only one tag shall be written but is write protected. No reason to abort.
+    # Improve: Replace check_call with subprocess.Popen to capture the output message and check for "Warning" and "Nothing to do".
+    except subprocess.CalledProcessError as e:
+        if e.output == None:
+            pass
+        else:
+            raise
     return metadata_target_dict
 
 
@@ -417,6 +415,7 @@ def verify_written_metadata(metadata_target_dict, metadata_written_dict):
 
 
 def set_metadata_without_group(movie_path, metadata_missing_dict):
+    print("set_metadata_without_group")
     stringbuilder = ["exiftool"]
     stringbuilder.append(" -" + " -".join('{}="{}"'.format(k, v) for (k, v) in metadata_missing_dict.items()))
     # Returns a generator object which is then joined.
@@ -428,6 +427,47 @@ def set_metadata_without_group(movie_path, metadata_missing_dict):
     stringbuilder.append('"' + movie_path + '"')
     # note: the space in " " is actually the seperator!
     command = " ".join(stringbuilder)
+    print("Trying to write makershift tags without groups ...")
+    try:
+        subprocess.check_call(command)  # throws error if only one tag shall be written but is write protected. No reason to abort.
+    # Improve: Replace check_call with subprocess.Popen to capture the output message and check for "Warning" and "Nothing to do".
+    except subprocess.CalledProcessError as e:
+        if e.output == None:
+            pass
+        else:
+            raise
+
+
+def set_metadata_dates(movie_path, metadata_missing_dict, original_date_dict):
+    """"Sets most dates to the file modification date of the original movie. Must be set at the end, otherwise FileModifyDate maybe reset to today"""
+
+    stringbuilder = ["exiftool"]
+    original_date = original_date_dict["original_date"]  # w/o timezone
+    original_date_tz = original_date_dict["original_date_tz"]  # w/ timezone
+
+    metadata_predef_dict = {
+        "DateTimeOriginal": original_date,
+        "FileModifyDate": original_date,
+        "FileCreateDate": original_date,
+        "CreationDate": original_date,
+        "MediaCreateDate": original_date_tz,
+        "MediaModifyDate": original_date_tz,
+      # "CreateDate": original_date_tz, # Wird in Windows immer um 1-2 h verschoben als "Datum" und "Medium erstellt" angezeigt, unabhängig von dem TZ-Shift
+      # Ohne diesen Tag wird das "Datum" basierend auf einem andern Tag korrekt angezeigt.
+        "ModifyDate": original_date_tz,
+        "TrackCreateDate": original_date_tz,
+        "TrackModifyDate": original_date_tz
+        # "CompressorName": video_codec,  # not writeable, but correctly set
+    }
+
+    for key, value in metadata_predef_dict.items():
+        if value > "":  # should always be the case
+            stringbuilder.append("-" + key + '="' + value + '"')
+
+    stringbuilder.append("-overwrite_original")
+    stringbuilder.append('"' + movie_path + '"')
+    command = " ".join(stringbuilder)
+    print("Writing date tags ...")
     subprocess.check_call(command)
 
 
@@ -441,10 +481,11 @@ def process_movie(movie_path, clip_from, clip_to, codec, crf, speed):  # clip_fr
     original_date_dict = get_original_date_and_tz_offset(metadata_dict)
     compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed)
     movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
-    metadata_target_dict = set_metadata(movie_path_out, metadata_dict, original_date_dict)
+    metadata_target_dict = set_metadata(movie_path_out, metadata_dict)
     metadata_written_dict = get_metadata(movie_path_out)
     metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
     set_metadata_without_group(movie_path_out, metadata_missing_dict)
+    set_metadata_dates(movie_path_out, metadata_dict, original_date_dict)  # must be set at the end to avoid setting the FileModifyDate to today
 
 
 def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed=""):  # clip_from = "00:00:04", clip_to= "00:00:06"
@@ -452,15 +493,59 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     movie path is directory: compresses all movies in the directory and adds as much metadata from the originals as possible"""
 
     if os.path.isdir(movie_path):
+        movies_lst: [str] = []
         for file in os.listdir(movie_path):
             file_lst = os.path.splitext(file)
             if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"]:
-                process_movie(os.path.join(movie_path, file), clip_from, clip_to, codec, crf, speed)
+                movies_lst.append(file)
+
+        print("\nThe following movies were found:\n")
+        print("\n".join(movies_lst))
+        inp = input("\nProceed (y/n)?")
+
+        if inp == "y":
+            for movie in movies_lst:
+                print("Processing {} ...".format(movie))
+                process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed)
+        else:
+            print("Quitting...\n")
+            quit()
+
     else:
-        process_movie(movie_path, clip_from, clip_to, codec, crf, speed)
+        print("\nAbout to process Movie\n\"{}\"".format(movie_path))
+        inp = input("\nProceed (y/n)?")
+
+        if inp == "y":
+            print("Processing ...")
+            process_movie(movie_path, clip_from, clip_to, codec, crf, speed)
+        else:
+            print("Quitting...\n")
+            quit()
 
 
-input_path = r"f:\TestMovies\FolderTest"
-process_movies(input_path)
+# Handling the command line arguments
+parser = argparse.ArgumentParser(description="Compress a specific movie or all movies in a directory")
+parser.add_argument("path", type=check_valid_path, help="Path to the movie or a directory containing movies")
+parser.add_argument(
+    "-cf", "--clip_from", type=check_valid_time, help="Start time from which the movie is to be copied [format 00:00:00 or 00:00:00.0]")
+parser.add_argument("-ct", "--clip_to", type=check_valid_time, help="End time up to which the movie is to be copied [format 00:00:00 or 00:00:00.0]")
+parser.add_argument("-c", "--codec", choices=["x265", "x264"], default="x265", help="Codec to be used for encoding")
+parser.add_argument("--crf", type=int, help="Constant Rate Factor to be used. By default (empty) 26 is used for x265 and 25 for x264")
+parser.add_argument(
+    "-s",
+    "--speed",
+    choices=["ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"],
+    default="",
+    help="Encoding preset to be used. By default (empty) 'slow' is used for x265 and 'veryslow' for x264")
 
-input("Press Enter to exit...")
+args = parser.parse_args()
+# args = parser.parse_args(["f:\\TestMovies\FolderTest\\IMG_E0095.MOV", "-s", "veryfast"])
+
+process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed)
+
+# print(results)
+
+# input_path = r"f:\TestMovies\FolderTest"
+# process_movies(input_path)
+
+# input("Press Enter to exit...")

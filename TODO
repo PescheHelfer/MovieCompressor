@@ -27,7 +27,14 @@ Todo:
   ✔ @high Group names may need to be included in the predefined date tags (within metadata_to_use_dict) -> make separate dict for that? @done(19-04-04 22:20)
   ✔ @high Makernotes (Canon group) are not yet writable in movies (w/o error). Some tags are converted the group XMP-exif, but only if the Canon group is not forced @done(19-04-04 22:20)
   ✔ @high First try to add the group tags, then check which tags have NOT been written (included in the output list but missing in the output file) and write them again not using the group @done(19-04-04 22:20)
+  ☐ @medium Checkback: x movies detected in folder / following movies detected in folder -> proceed?
+  ☐ @medium default for path: current work directory -> handle that in batch file. Unknown what the wd will be in such a call!
 
+Bugs:
+✘ @critical bei CreateDate & ModifyDate die Zeitzone abschneiden, da sie von Windows falsch interpretiert wird (Datum / Medium erstellt 1-2 Stunden zu spät dargestellt) @cancelled(19-04-11 11:43)
+    nicht lösbar, selbst wenn die TZ auf keinem Feld eingetragen ist, rechnet Windows einen Wert dazu. Scheint mit der in Windows eingestellten TZ zu tun zu haben.
+  ✔ @critical Durch das zweite Schreiben der Tags wird das FileModifyDate auf das aktuelle Datum gesetzt -> beim zweiten Mal ebenfalls inkludieren! @done(19-04-12 00:13)
+  ☐ @low Warning: Value below int16u minimum for Panasonic:ProgramISO
  
 Ideas:  
   ☐ @low Proper Docstrings using Autodocstring
@@ -38,6 +45,7 @@ Ideas:
 
 
 Notes:
+  • More info on Exif Tags: https://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/
   • MKV is not yet writable by EXIFTOOL (error message).
   • MOV and MP4 are partially writable. Only XMP tags are written. Tags from the canon group etc. (makernotes) are only written if they have a corresponding XMP-tag.
   • For MOV and MP4, there is no error message that some tags have not been written.
