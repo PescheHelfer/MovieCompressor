@@ -2,6 +2,19 @@ import argparse
 import subprocess
 import os
 from datetime import datetime, timezone  # , timedelta
+from colorama import init, Fore, Style
+init()  # colorama
+
+
+def print_info(string):
+    print(Fore.CYAN + string + Fore.RESET + Style.NORMAL)
+
+
+def input_color(string):
+    print(Fore.YELLOW)
+    inp = input(string)
+    print(Fore.RESET + Style.NORMAL)
+    return inp
 
 
 def get_metadata(movie_path):
@@ -392,7 +405,7 @@ def set_metadata(movie_path, metadata_dict):
     stringbuilder.append('"' + movie_path + '"')
     # note: the space in " " is actually the seperator!
     command = " ".join(stringbuilder)
-    print("Trying to write makershift tags with groups ...")
+    print_info("Trying to write makershift tags with groups ...")
     try:
         subprocess.check_call(command)  # throws error if only one tag shall be written but is write protected. No reason to abort.
     # Improve: Replace check_call with subprocess.Popen to capture the output message and check for "Warning" and "Nothing to do".
@@ -415,7 +428,7 @@ def verify_written_metadata(metadata_target_dict, metadata_written_dict):
 
 
 def set_metadata_without_group(movie_path, metadata_missing_dict):
-    print("set_metadata_without_group")
+    print_info("set_metadata_without_group")
     stringbuilder = ["exiftool"]
     stringbuilder.append(" -" + " -".join('{}="{}"'.format(k, v) for (k, v) in metadata_missing_dict.items()))
     # Returns a generator object which is then joined.
@@ -427,7 +440,7 @@ def set_metadata_without_group(movie_path, metadata_missing_dict):
     stringbuilder.append('"' + movie_path + '"')
     # note: the space in " " is actually the seperator!
     command = " ".join(stringbuilder)
-    print("Trying to write makershift tags without groups ...")
+    print_info("Trying to write makershift tags without groups ...")
     try:
         subprocess.check_call(command)  # throws error if only one tag shall be written but is write protected. No reason to abort.
     # Improve: Replace check_call with subprocess.Popen to capture the output message and check for "Warning" and "Nothing to do".
@@ -452,8 +465,8 @@ def set_metadata_dates(movie_path, metadata_missing_dict, original_date_dict):
         "CreationDate": original_date,
         "MediaCreateDate": original_date_tz,
         "MediaModifyDate": original_date_tz,
-      # "CreateDate": original_date_tz, # Wird in Windows immer um 1-2 h verschoben als "Datum" und "Medium erstellt" angezeigt, unabhängig von dem TZ-Shift
-      # Ohne diesen Tag wird das "Datum" basierend auf einem andern Tag korrekt angezeigt.
+        # "CreateDate": original_date_tz, # Wird in Windows immer um 1-2 h verschoben als "Datum" und "Medium erstellt" angezeigt, unabhängig von dem TZ-Shift
+        # Ohne diesen Tag wird das "Datum" basierend auf einem andern Tag korrekt angezeigt.
         "ModifyDate": original_date_tz,
         "TrackCreateDate": original_date_tz,
         "TrackModifyDate": original_date_tz
@@ -467,7 +480,7 @@ def set_metadata_dates(movie_path, metadata_missing_dict, original_date_dict):
     stringbuilder.append("-overwrite_original")
     stringbuilder.append('"' + movie_path + '"')
     command = " ".join(stringbuilder)
-    print("Writing date tags ...")
+    print_info(Fore.YELLOW + "Writing date tags ...")
     subprocess.check_call(command)
 
 
@@ -499,27 +512,27 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
             if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"]:
                 movies_lst.append(file)
 
-        print("\nThe following movies were found:\n")
-        print("\n".join(movies_lst))
-        inp = input("\nProceed (y/n)?")
+        print_info("\nThe following movies were found:\n")
+        print_info("\n".join(movies_lst))
+        inp = input_color("\nProceed (y/n)? ")
 
         if inp == "y":
             for movie in movies_lst:
-                print("Processing {} ...".format(movie))
+                print_info("Processing {} ...".format(movie))
                 process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed)
         else:
-            print("Quitting...\n")
+            print_info("Quitting...\n")
             quit()
 
     else:
-        print("\nAbout to process Movie\n\"{}\"".format(movie_path))
-        inp = input("\nProceed (y/n)?")
+        print_info("\nAbout to process Movie\n\"{}\"".format(movie_path))
+        inp = input_color("\nProceed (y/n)? ")
 
         if inp == "y":
-            print("Processing ...")
+            print_info("Processing ...")
             process_movie(movie_path, clip_from, clip_to, codec, crf, speed)
         else:
-            print("Quitting...\n")
+            print_info("Quitting...\n")
             quit()
 
 
