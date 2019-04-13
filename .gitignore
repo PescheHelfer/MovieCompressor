@@ -29,3 +29,6 @@ tmp/**
 .python-version
 .vs/
 ~$*
+ExifDataPerModel.xlsx
+DeploymentFolderForBatch.lnk
+
