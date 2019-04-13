@@ -9,6 +9,8 @@ init()  # colorama
 def print_info(string):
     print(Fore.CYAN + string + Fore.RESET + Style.NORMAL)
 
+def print_error(string):
+    print(Fore.RED + string + Fore.RESET + Style.NORMAL)
 
 def input_color(string):
     print(Fore.YELLOW)
@@ -428,7 +430,6 @@ def verify_written_metadata(metadata_target_dict, metadata_written_dict):
 
 
 def set_metadata_without_group(movie_path, metadata_missing_dict):
-    print_info("set_metadata_without_group")
     stringbuilder = ["exiftool"]
     stringbuilder.append(" -" + " -".join('{}="{}"'.format(k, v) for (k, v) in metadata_missing_dict.items()))
     # Returns a generator object which is then joined.
@@ -512,20 +513,24 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
             if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"]:
                 movies_lst.append(file)
 
-        print_info("\nThe following movies were found:\n")
-        print_info("\n".join(movies_lst))
-        inp = input_color("\nProceed (y/n)? ")
-
-        if inp == "y":
-            for movie in movies_lst:
-                print_info("Processing {} ...".format(movie))
-                process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed)
-        else:
-            print_info("Quitting...\n")
+        if len(movies_lst) == 0:
+            print_error("\nNo movies found in directory.\nQuitting...")
             quit()
+        else:
+            print_info("\nThe following movies were found:\n")
+            print_info("\n".join(movies_lst))
+            inp = input_color("\nProceed (y/n)? ")
 
-    else:
-        print_info("\nAbout to process Movie\n\"{}\"".format(movie_path))
+            if inp == "y":
+                for movie in movies_lst:
+                    print_info("Processing {} ...".format(movie))
+                    process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed)
+            else:
+                print_info("Quitting...\n")
+                quit()
+
+    elif os.path.isfile(movie_path) and os.path.splitext(movie_path)[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"]:
+        print_info("\nAbout to process movie\n\"{}\"".format(movie_path))
         inp = input_color("\nProceed (y/n)? ")
 
         if inp == "y":
@@ -534,6 +539,10 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
         else:
             print_info("Quitting...\n")
             quit()
+
+    else:
+        print_error("\nFile not recognized as movie (.MOV, .MKV, .MP4, .AVI, .MPG, .MPEG).\nQuitting...")
+        quit()
 
 
 # Handling the command line arguments
