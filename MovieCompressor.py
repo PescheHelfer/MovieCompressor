@@ -89,7 +89,9 @@ def check_valid_time(string):
 
 
 def check_valid_path(path):
+    print("Checking path {}".format(path))
     if os.path.isfile(path) or os.path.isdir(path):
+        print("Path is valid")
         return path
     else:
         msg = "Not a valid file or directory path: '{0}'.".format(path)
@@ -506,9 +508,13 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     """movie path is file: compresses the single movie and adds as much metadata from the original as possible\r\n
     movie path is directory: compresses all movies in the directory and adds as much metadata from the originals as possible"""
 
+    print("Path received: {}".format(movie_path))
+
     if os.path.isdir(movie_path):
+        print("Path is directory")
         movies_lst: [str] = []
         for file in os.listdir(movie_path):
+            print("Checking if file {} is a movie".format(file))
             file_lst = os.path.splitext(file)
             if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"]:
                 movies_lst.append(file)
@@ -561,7 +567,7 @@ parser.add_argument(
     help="Encoding preset to be used. By default (empty) 'slow' is used for x265 and 'veryslow' for x264")
 
 args = parser.parse_args()
-# args = parser.parse_args(["f:\\TestMovies\FolderTest\\IMG_E0095.MOV", "-s", "veryfast"])
+# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich", "-s", "veryfast"])
 
 process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed)
 
