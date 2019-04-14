@@ -35,7 +35,8 @@ Bugs:
     "CreateDate": original_date_tz, # Wird in Windows immer um 1-2 h verschoben als "Datum" und "Medium erstellt" angezeigt, unabhängig von dem TZ-Shift
     Ohne diesen Tag wird das "Datum" basierend auf einem andern Tag korrekt angezeigt.
   ✔ @critical Durch das zweite Schreiben der Tags wird das FileModifyDate auf das aktuelle Datum gesetzt -> beim zweiten Mal ebenfalls inkludieren! @done(19-04-12 00:13)
-  ☐ @critical Pfade mit Hochkomma können nicht verarbeitet werden, z.B. "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\"
+  ✔ @critical Pfade mit Hochkomma können nicht verarbeitet werden, z.B. "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\" @done(19-04-14 21:05)
+  ✔ @critical Pfad wir nun zwar weitergeben, stürzt aber beim Prozessieren der einzelnen Movies ab! @done(19-04-14 21:25)
   ☐ @low Warning: Value below int16u minimum for Panasonic:ProgramISO
  
 Ideas:  

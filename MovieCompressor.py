@@ -38,7 +38,7 @@ def get_metadata(movie_path):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE)
     # class "bytes", sequence of bytes, similar to string, but ASCII only and immutable
-    metadata_str = p1.communicate()[0].decode("utf-8")
+    metadata_str = p1.communicate()[0].decode("iso-8859-1")
     test_list2D = tuplelist = [[4, 180, 21], [5, 90, 10], [3, 270, 8], [4, 0, 7]]
     metadata_list2D = list(item.split("\t", ) for item in metadata_str.split("\r\n")[:-1])  # last element is empty -> remove
     metadata_dict = {b: (a, c) for a, b, c in metadata_list2D}
@@ -89,9 +89,7 @@ def check_valid_time(string):
 
 
 def check_valid_path(path):
-    print("Checking path {}".format(path))
     if os.path.isfile(path) or os.path.isdir(path):
-        print("Path is valid")
         return path
     else:
         msg = "Not a valid file or directory path: '{0}'.".format(path)
@@ -508,13 +506,9 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     """movie path is file: compresses the single movie and adds as much metadata from the original as possible\r\n
     movie path is directory: compresses all movies in the directory and adds as much metadata from the originals as possible"""
 
-    print("Path received: {}".format(movie_path))
-
     if os.path.isdir(movie_path):
-        print("Path is directory")
         movies_lst: [str] = []
         for file in os.listdir(movie_path):
-            print("Checking if file {} is a movie".format(file))
             file_lst = os.path.splitext(file)
             if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"]:
                 movies_lst.append(file)
