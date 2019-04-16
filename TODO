@@ -28,7 +28,8 @@ Todo:
   ✔ @high Makernotes (Canon group) are not yet writable in movies (w/o error). Some tags are converted the group XMP-exif, but only if the Canon group is not forced @done(19-04-04 22:20)
   ✔ @high First try to add the group tags, then check which tags have NOT been written (included in the output list but missing in the output file) and write them again not using the group @done(19-04-04 22:20)
   ✔ @medium Checkback: x movies detected in folder / following movies detected in folder -> proceed? @done(19-04-12 00:27)
-  ☐ @medium default for path: current work directory -> handle that in batch file. Unknown what the wd will be in such a call!
+  ✔ @medium default for path: current work directory -> handle that in batch file. Unknown what the wd will be in such a call! @done(19-04-16 21:59)
+  ✔ @high add tune option, e.g. grain for darker szenes. They differ for x264 and x265! @done(19-04-16 21:59)
 
 Bugs:
   ✔ @critical bei CreateDate & ModifyDate die Zeitzone abschneiden, da sie von Windows falsch interpretiert wird (Datum / Medium erstellt 1-2 Stunden zu spät dargestellt) @done(19-04-12 00:26)

@@ -9,8 +9,10 @@ init()  # colorama
 def print_info(string):
     print(Fore.CYAN + string + Fore.RESET + Style.NORMAL)
 
+
 def print_error(string):
     print(Fore.RED + string + Fore.RESET + Style.NORMAL)
+
 
 def input_color(string):
     print(Fore.YELLOW)
@@ -96,6 +98,22 @@ def check_valid_path(path):
         raise argparse.ArgumentTypeError(msg)
 
 
+def check_valid_tune(codec, tune):
+    x264_tunes = ["film", "animation", "grain", "stillimage", "fastdecode", "zerolatency", "psnr", "ssim"]
+    x265_tunes = ["psnr", "ssim", "grain", "zerolatency", "fastdecode"]
+
+    if tune == "":
+        pass
+    elif codec == "x264" and tune not in x264_tunes:
+        print_error("Valid tunes for x264: {}".format(", ".join(x264_tunes)))
+        quit()
+    elif codec == "x265" and tune not in x265_tunes:
+        print_error("Valid tunes for x265: {}".format(", ".join(x265_tunes)))
+        quit()
+    else:
+        pass
+
+
 def get_original_date_and_tz_offset(metadata_dict):
     # Bei den meisten Modellen sind nur das "CreationDate" (Apple), "DateTimeOriginal" (einige andere) verlässlich. Jedoch weisen nicht alle
     # Modelle diese Felder auf. Meistens ist auch das "FileModifyDate" verlässlich. Übrige Zeitangaben weichen je Modell um -1h ab, unabhängig von Sommerzeit.
@@ -154,7 +172,7 @@ def get_original_date_and_tz_offset(metadata_dict):
     return {"original_date": original_date.strftime("%Y:%m:%d %H:%M:%S"), "original_date_tz": original_date_tz}
 
 
-def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed=""):
+def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune=""):
     """Compress movie with x265, crf 26 slow (default) or x264 crf 25 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
 
     # parse clipping information
@@ -172,11 +190,13 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     crf_ = str(crf) if str(crf) != "" and crf != None else "26" if codec == "x265" else "25"
     # 25 best for x264, 26 equal quality for x265
     preset_ = (" -preset " + speed) if str(speed) != "" and speed != None else " -preset veryslow" if codec == "x264" else " -preset slow"
+    tune_ = (" -tune " + tune) if str(tune) != "" and tune != None else ""
     movie_lst = os.path.splitext(movie_path)
 
     # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
     movie_cmp = movie_lst[0] + "c" + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
-    command = 'ffmpeg{0} -i "{1}"{2} -c:v {3} -crf {4}{5} -map_metadata 0 "{6}"'.format(ss_, movie_path, t_, codec_, crf_, preset_, movie_cmp)
+    command = 'ffmpeg{0} -i "{1}"{2} -c:v {3} -crf {4}{5}{6} -map_metadata 0 "{7}"'.format(ss_, movie_path, t_, codec_, crf_, preset_, tune_,
+                                                                                           movie_cmp)
     # -i              -> input file(s)
     # -c:v            -> select video encoder
     # -c:a            -> select audio encoder (skipping this will simply copy the audio stream without reencoding)
@@ -196,7 +216,7 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # http://ffmpeg.org/ffmpeg-all.html
     # https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
     subprocess.check_call(command)
-    #print(command)
+    print_info("ffmpeg command: {}".format(command))
     return {"movie_path_out": movie_cmp, "codec": codec.upper()}
 
 
@@ -485,7 +505,7 @@ def set_metadata_dates(movie_path, metadata_missing_dict, original_date_dict):
     subprocess.check_call(command)
 
 
-def process_movie(movie_path, clip_from, clip_to, codec, crf, speed):  # clip_from = "00:00:04", clip_to= "00:00:06"
+def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune):  # clip_from = "00:00:04", clip_to= "00:00:06"
 
     movie_path_in: str
     movie_path_out: str = ""
@@ -493,16 +513,16 @@ def process_movie(movie_path, clip_from, clip_to, codec, crf, speed):  # clip_fr
 
     metadata_dict = get_metadata(movie_path)
     original_date_dict = get_original_date_and_tz_offset(metadata_dict)
-    compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed)
+    compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune)
     movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
     metadata_target_dict = set_metadata(movie_path_out, metadata_dict)
-    metadata_written_dict = get_metadata(movie_path_out)
-    metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
-    set_metadata_without_group(movie_path_out, metadata_missing_dict)
-    set_metadata_dates(movie_path_out, metadata_dict, original_date_dict)  # must be set at the end to avoid setting the FileModifyDate to today
+    # metadata_written_dict = get_metadata(movie_path_out)
+    # metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
+    # set_metadata_without_group(movie_path_out, metadata_missing_dict)
+    # set_metadata_dates(movie_path_out, metadata_dict, original_date_dict)  # must be set at the end to avoid setting the FileModifyDate to today
 
 
-def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed=""):  # clip_from = "00:00:04", clip_to= "00:00:06"
+def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune=""):  # clip_from = "00:00:04", clip_to= "00:00:06"
     """movie path is file: compresses the single movie and adds as much metadata from the original as possible\r\n
     movie path is directory: compresses all movies in the directory and adds as much metadata from the originals as possible"""
 
@@ -524,7 +544,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
             if inp == "y":
                 for movie in movies_lst:
                     print_info("Processing {} ...".format(movie))
-                    process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed)
+                    process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed, tune)
             else:
                 print_info("Quitting...\n")
                 quit()
@@ -535,7 +555,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
         if inp == "y":
             print_info("Processing ...")
-            process_movie(movie_path, clip_from, clip_to, codec, crf, speed)
+            process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune)
         else:
             print_info("Quitting...\n")
             quit()
@@ -559,11 +579,20 @@ parser.add_argument(
     choices=["ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow"],
     default="",
     help="Encoding preset to be used. By default (empty) 'slow' is used for x265 and 'veryslow' for x264")
+parser.add_argument(
+    "-t",
+    "--tune",
+    choices=["film", "animation", "grain", "stillimage", "fastdecode", "zerolatency", "psnr", "ssim"],
+    default="",
+    help="Set tune option (different options for x264 and x265). Empty by default.")
 
-args = parser.parse_args()
-# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich", "-s", "veryfast"])
+# args = parser.parse_args()
+args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-t", "psnr", "-c", "x264"])
+# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-c", "x264"])
 
-process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed)
+check_valid_tune(args.codec, args.tune)
+
+process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune)
 
 # print(results)
 
