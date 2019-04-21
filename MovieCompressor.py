@@ -102,7 +102,7 @@ def check_valid_tune(codec, tune):
     x264_tunes = ["film", "animation", "grain", "stillimage", "fastdecode", "zerolatency", "psnr", "ssim"]
     x265_tunes = ["psnr", "ssim", "grain", "zerolatency", "fastdecode"]
 
-    if tune == "":
+    if tune in ["", "HQ"]:
         pass
     elif codec == "x264" and tune not in x264_tunes:
         print_error("Valid tunes for x264: {}".format(", ".join(x264_tunes)))
@@ -112,6 +112,19 @@ def check_valid_tune(codec, tune):
         quit()
     else:
         pass
+
+
+def set_HQ_settings(args):
+    # preset for higher quality, especially movies in dark szenes that suffer from too much denoising
+    # x264 -crf 22 -preset veryslow -tune film
+    # -tune will always be film, because the parameter is "abused" to take a custom tune and cannot be used twice
+    # note: the codec can not be overridden and is always x264 when -t HQ is used
+    # other parameters can be overridden by the user, e.g. --crf
+    args.codec = "x264"
+    args.crf = 22 if (args.crf == None or args.crf == "") else args.crf
+    args.speed = "veryslow" if (args.speed == None or args.speed == "") else args.speed
+    args.tune = "film"
+    return args
 
 
 def get_original_date_and_tz_offset(metadata_dict):
@@ -173,7 +186,7 @@ def get_original_date_and_tz_offset(metadata_dict):
 
 
 def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune=""):
-    """Compress movie with x265, crf 26 slow (default) or x264 crf 25 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
+    """Compress movie with x265, crf 25 slow (default) or x264 crf 24 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
 
     # parse clipping information
     ss_ = "" if clip_from == None or clip_from == "" else (" -ss " + clip_from)
@@ -187,8 +200,8 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
         t_ = ""
 
     codec_ = "libx265" if codec.lower() == "x265" else "libx264" if codec.lower() == "x264" else codec
-    crf_ = str(crf) if str(crf) != "" and crf != None else "26" if codec == "x265" else "25"
-    # 25 best for x264, 26 equal quality for x265
+    crf_ = str(crf) if str(crf) != "" and crf != None else "25" if codec == "x265" else "24"
+    # 24 best for x264, 25 equal quality for x265
     preset_ = (" -preset " + speed) if str(speed) != "" and speed != None else " -preset veryslow" if codec == "x264" else " -preset slow"
     tune_ = (" -tune " + tune) if str(tune) != "" and tune != None else ""
     movie_lst = os.path.splitext(movie_path)
@@ -216,7 +229,7 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # http://ffmpeg.org/ffmpeg-all.html
     # https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
     subprocess.check_call(command)
-    print_info("ffmpeg command: {}".format(command))
+    # print_info("ffmpeg command: {}".format(command))
     return {"movie_path_out": movie_cmp, "codec": codec.upper()}
 
 
@@ -572,7 +585,7 @@ parser.add_argument(
     "-cf", "--clip_from", type=check_valid_time, help="Start time from which the movie is to be copied [format 00:00:00 or 00:00:00.0]")
 parser.add_argument("-ct", "--clip_to", type=check_valid_time, help="End time up to which the movie is to be copied [format 00:00:00 or 00:00:00.0]")
 parser.add_argument("-c", "--codec", choices=["x265", "x264"], default="x265", help="Codec to be used for encoding")
-parser.add_argument("--crf", type=int, help="Constant Rate Factor to be used. By default (empty) 26 is used for x265 and 25 for x264")
+parser.add_argument("--crf", type=int, help="Constant Rate Factor to be used. By default (empty) 25 is used for x265 and 24 for x264")
 parser.add_argument(
     "-s",
     "--speed",
@@ -582,15 +595,20 @@ parser.add_argument(
 parser.add_argument(
     "-t",
     "--tune",
-    choices=["film", "animation", "grain", "stillimage", "fastdecode", "zerolatency", "psnr", "ssim"],
+    choices=["film", "animation", "grain", "stillimage", "fastdecode", "zerolatency", "psnr", "ssim", "HQ"],
     default="",
     help="Set tune option (different options for x264 and x265). Empty by default.")
 
 # args = parser.parse_args()
-args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-t", "psnr", "-c", "x264"])
+# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-t", "psnr", "-c", "x264"])
 # args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-c", "x264"])
 
+args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-t", "HQ"])
+
 check_valid_tune(args.codec, args.tune)
+
+if args.tune == "HQ":
+    args = set_HQ_settings(args)
 
 process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune)
 

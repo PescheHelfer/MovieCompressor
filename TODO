@@ -30,6 +30,14 @@ Todo:
   ✔ @medium Checkback: x movies detected in folder / following movies detected in folder -> proceed? @done(19-04-12 00:27)
   ✔ @medium default for path: current work directory -> handle that in batch file. Unknown what the wd will be in such a call! @done(19-04-16 21:59)
   ✔ @high add tune option, e.g. grain for darker szenes. They differ for x264 and x265! @done(19-04-16 21:59)
+  ✘ @high Implement aq-mode setting. --aq-mode 3 is good for dark szenes (x264 and x265): http://forum.doom9.org/showthread.php?t=173870 @cancelled(19-04-21 21:56)
+  3. AQ enabled with auto-variance and bias to dark scenes. This is recommended for 8-bit encodes or low-bitrate 10-bit encodes, to prevent color banding/blocking. 
+  https://unix.stackexchange.com/questions/230800/re-encoding-video-library-in-x265-hevc-with-no-quality-loss
+   pass it like -x265-params --aq-mode=3  or -x265-params "aq-mode=3"  (see https://stackoverflow.com/questions/41949638/ffmpeg-wont-recognize-x265-options)
+   for x264: -x264opts aq-mode=3 
+  ✔ @high Or even better: find optimal setting for dark szenes and implement it as -tune HQ @done(19-04-21 21:56)
+  -> x264 -crf 22 -preset veryslow -tune film
+  ✔ @low Lower the default CRF by 1 to increase default quality a bit: x265: 26 -> 25, x264: 25 -> 24 @done(19-04-21 21:56)
 
 Bugs:
   ✔ @critical bei CreateDate & ModifyDate die Zeitzone abschneiden, da sie von Windows falsch interpretiert wird (Datum / Medium erstellt 1-2 Stunden zu spät dargestellt) @done(19-04-12 00:26)
@@ -39,6 +47,7 @@ Bugs:
   ✔ @critical Pfade mit Hochkomma können nicht verarbeitet werden, z.B. "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\" @done(19-04-14 21:05)
   ✔ @critical Pfad wir nun zwar weitergeben, stürzt aber beim Prozessieren der einzelnen Movies ab! @done(19-04-14 21:25)
   ☐ @low Warning: Value below int16u minimum for Panasonic:ProgramISO
+  ☐ @low set -charset option for exiftools, which may have sideffects, though: http://owl.phy.queensu.ca/~phil/exiftool/faq.html#Q18 http://u88.n24.queensu.ca/exiftool/forum/index.php?topic=6721.0
  
 Ideas:  
   ☐ @low Proper Docstrings using Autodocstring
