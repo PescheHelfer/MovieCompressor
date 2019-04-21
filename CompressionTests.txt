@@ -65,4 +65,25 @@ ffmpeg -i "f:\TestMovies\P1170339.MP4" -ss 00:00:05.903 -c:v libx265 -crf 25 -pr
 -> illegal
 
 ffmpeg -i "f:\TestMovies\P1170339.MP4" -ss 00:00:05.903 -c:v libx265 -crf 25 -preset fast "f:\TestMovies\P1170339_cut4.MP4 -to 00:00:03.903"
--> illegal
+-> illegalDark Szenes
+
+ffmpeg -i "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472.MP4" -c:v libx264 -crf 25 -preset veryslow -tune film -map_metadata 0  "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472c_264_25_film.MP4"
+
+ffmpeg -i "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472.MP4" -c:v libx265 -crf 25 -preset slow -map_metadata 0 -x265-params --aq-mode=3 "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472c_265_25_aqmode3.MP4"
+
+ffmpeg -i "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472.MP4" -c:v libx265 -crf 26 -preset slow -map_metadata 0 -x265-params --aq-mode=3 "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472c_265_26_aqmode3.MP4"
+
+ffmpeg -i "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472.MP4" -c:v libx264 -crf 25 -preset veryslow -map_metadata 0 -x264opts aq-mode=3 "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472c_264_25_aqmode3.MP4"
+
+ffmpeg -i "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472.MP4" -c:v libx264 -crf 25 -preset veryslow -map_metadata 0 -tune grain -x264opts aq-mode=3 "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472c_264_25_grain_aqmode3.MP4"
+
+ffmpeg -i "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472.MP4" -c:v libx264 -crf 25 -preset veryslow -map_metadata 0 -tune grain "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472c_264_25_grain.MP4"
+
+ffmpeg -i "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472.MP4" -c:v libx264 -crf 22 -preset veryslow -tune film -map_metadata 0  "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472c_264_22_film.MP4"
+
+ffmpeg -i "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472.MP4" -c:v libx264 -crf 20 -preset veryslow -tune film -map_metadata 0  "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472c_264_20_film.MP4"
+
+ffmpeg -i "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472.MP4" -c:v libx265 -crf 22 -preset slow -map_metadata 0 -x265-params --aq-mode=3 "f:\Libraries\Pesche\Pictures\Digicams\2019\'19_03_23 Zoo Zürich\P1210472c_265_22_aqmode3.MP4"
+
+--> x264 -crf 22 -preset veryslow -tune film ist der beste Kompromiss. Nicht ganz Originalqualität, aber deutlich besser als x265 oder höhere CRFs und immer noch deutlich kleiner als das Original.
+-crf 20 ist nochmals sichtbar besser (primär Noise, bei "echten" Details kaum mehr Verbesserung), aber auch entsprechend grösser.
