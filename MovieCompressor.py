@@ -426,6 +426,7 @@ def set_metadata(movie_path, metadata_dict):
 
     # dictionary of tags that are supposed to be written
     metadata_target_dict: {str, str} = {}
+    match_cnt = 0
 
     for key, value in metadata_to_use_dict.items():
         if (key in metadata_dict):
@@ -436,6 +437,11 @@ def set_metadata(movie_path, metadata_dict):
                 stringbuilder.append("-" + metadata_dict[key][0] + ":" + key + '="' + metadata_dict[key][1] + '"')
                 # -group:key=value
                 metadata_target_dict[key] = metadata_dict[key][1]
+            match_cnt += 1
+
+    if match_cnt == 0:
+        print_info("No metadata found other than dates ...")
+        return # returns None and exits the function
 
     # prevents creation of _original file
     stringbuilder.append("-overwrite_original")
@@ -455,6 +461,9 @@ def set_metadata(movie_path, metadata_dict):
 
 
 def verify_written_metadata(metadata_target_dict, metadata_written_dict):
+    if metadata_target_dict == None:
+        return
+    
     metadata_missing_dict = {k: v for (k, v) in metadata_target_dict.items() - [(a, c) for a, (b, c) in metadata_written_dict.items()]}
     # (a,c) for a, (b,c) -> convert (key, (group, value)) to (key, value)
 
@@ -465,6 +474,9 @@ def verify_written_metadata(metadata_target_dict, metadata_written_dict):
 
 
 def set_metadata_without_group(movie_path, metadata_missing_dict):
+    if metadata_missing_dict == None:
+        return
+    
     stringbuilder = ["exiftool"]
     stringbuilder.append(" -" + " -".join('{}="{}"'.format(k, v) for (k, v) in metadata_missing_dict.items()))
     # Returns a generator object which is then joined.
@@ -547,7 +559,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
         movies_lst: [str] = []
         for file in os.listdir(movie_path):
             file_lst = os.path.splitext(file)
-            if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"] and not file_lst[0].endswith(suffix):
+            if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"] and not file_lst[0].lower().endswith(suffix):
                 movies_lst.append(file)
 
         if len(movies_lst) == 0:
@@ -566,8 +578,9 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
                 print_info("Quitting...\n")
                 quit()
 
-    elif os.path.isfile(movie_path) and os.path.splitext(movie_path)[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"
-                                                                                    ] and not file_lst[0].endswith(suffix):
+    elif os.path.isfile(movie_path) and os.path.splitext(movie_path)[1].upper() in [
+            ".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"
+    ] and not os.path.splitext(movie_path)[0].lower().endswith(suffix):
         print_info("\nAbout to process movie\n\"{}\"".format(movie_path))
         inp = input_color("\nProceed (y/n)? ")
 

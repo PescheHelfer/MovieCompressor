@@ -51,7 +51,9 @@ Bugs:
   ✔ @critical Pfad wir nun zwar weitergeben, stürzt aber beim Prozessieren der einzelnen Movies ab! @done(19-04-14 21:25)
   ☐ @low Warning: Value below int16u minimum for Panasonic:ProgramISO
   ☐ @low set -charset option for exiftools, which may have sideffects, though: http://owl.phy.queensu.ca/~phil/exiftool/faq.html#Q18 http://u88.n24.queensu.ca/exiftool/forum/index.php?topic=6721.0
- 
+  ✔ @critical When specifying a movie instead of a directory and adding an option (e.g. -t HQ) an error is thrown @done(19-04-22 19:58)
+  ✔ @critical Process hangs when there is no metadata aside from dates (at the step set_metadata_without_group) @done(19-04-22 20:44)
+   
 Ideas:  
   ☐ @low Proper Docstrings using Autodocstring
   ☐ @low Parameter validition e.g. by using dictionaries or when calling it from cmd
