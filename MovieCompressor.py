@@ -1,8 +1,10 @@
 import argparse
-import subprocess
 import os
+import subprocess
 from datetime import datetime, timezone  # , timedelta
-from colorama import init, Fore, Style
+
+from colorama import Fore, Style, init
+
 init()  # colorama
 
 
@@ -207,7 +209,7 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     movie_lst = os.path.splitext(movie_path)
 
     # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
-    movie_cmp = movie_lst[0] + "c" + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
+    movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
     command = 'ffmpeg{0} -i "{1}"{2} -c:v {3} -crf {4}{5}{6} -map_metadata 0 "{7}"'.format(ss_, movie_path, t_, codec_, crf_, preset_, tune_,
                                                                                            movie_cmp)
     # -i              -> input file(s)
@@ -539,11 +541,13 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     """movie path is file: compresses the single movie and adds as much metadata from the original as possible\r\n
     movie path is directory: compresses all movies in the directory and adds as much metadata from the originals as possible"""
 
+    suffix = ("x264", "x265")  # to check for already processed movies, used by endswith()
+
     if os.path.isdir(movie_path):
         movies_lst: [str] = []
         for file in os.listdir(movie_path):
             file_lst = os.path.splitext(file)
-            if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"]:
+            if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"] and not file_lst[0].endswith(suffix):
                 movies_lst.append(file)
 
         if len(movies_lst) == 0:
@@ -562,7 +566,8 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
                 print_info("Quitting...\n")
                 quit()
 
-    elif os.path.isfile(movie_path) and os.path.splitext(movie_path)[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"]:
+    elif os.path.isfile(movie_path) and os.path.splitext(movie_path)[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"
+                                                                                    ] and not file_lst[0].endswith(suffix):
         print_info("\nAbout to process movie\n\"{}\"".format(movie_path))
         inp = input_color("\nProceed (y/n)? ")
 
@@ -616,4 +621,4 @@ process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, ar
 # input_path = r"f:\TestMovies\FolderTest"
 # process_movies(input_path)
 
-# input("Press Enter to exit... ")
+# input("Press Enter to exit...")
