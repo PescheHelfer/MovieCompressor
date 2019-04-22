@@ -40,7 +40,7 @@ Todo:
   ✔ @low Lower the default CRF by 1 to increase default quality a bit: x265: 26 -> 25, x264: 25 -> 24 @done(19-04-21 21:56)
   ✔ high: add codec as suffix to filename (x264, x265) @done(19-04-22 14:54)
   ✔ high: exclude files ending in x264/x265 when searching the directory for movies @done(19-04-22 15:16)
-  ☐ medium: modify batch file to allow passing options even when the path is not specified
+  ✔ medium: modify batch file to allow passing options even when the path is not specified @done(19-04-23 01:23)
 
 Bugs:
   ✔ @critical bei CreateDate & ModifyDate die Zeitzone abschneiden, da sie von Windows falsch interpretiert wird (Datum / Medium erstellt 1-2 Stunden zu spät dargestellt) @done(19-04-12 00:26)
