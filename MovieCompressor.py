@@ -230,8 +230,8 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # http://trac.ffmpeg.org/wiki/Encode/AAC
     # http://ffmpeg.org/ffmpeg-all.html
     # https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
+    print_info("ffmpeg command: {}".format(command))
     subprocess.check_call(command)
-    # print_info("ffmpeg command: {}".format(command))
     return {"movie_path_out": movie_cmp, "codec": codec.upper()}
 
 
@@ -618,7 +618,7 @@ parser.add_argument(
     help="Set tune option (different options for x264 and x265). Empty by default.")
 
 args = parser.parse_args()
-# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-t", "psnr", "-c", "x264"])
+#args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-t", "psnr", "-c", "x264"])
 # args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-c", "x264"])
 # args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-t", "HQ"])
 
