@@ -2,10 +2,19 @@ import argparse
 import os
 import subprocess
 from datetime import datetime, timezone  # , timedelta
-
 from colorama import Fore, Style, init
-
 init()  # colorama
+
+
+class SmartFormatter(argparse.HelpFormatter):
+    """Enables multiline help messages
+    https://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text"""
+
+    def _split_lines(self, text, width):
+        if text.startswith('R|'):
+            return text[2:].splitlines()
+        # this is the RawTextHelpFormatter._split_lines
+        return argparse.HelpFormatter._split_lines(self, text, width)
 
 
 def print_info(string):
@@ -43,7 +52,7 @@ def get_metadata(movie_path):
         stderr=subprocess.PIPE)
     # class "bytes", sequence of bytes, similar to string, but ASCII only and immutable
     metadata_str = p1.communicate()[0].decode("iso-8859-1")
-    test_list2D = tuplelist = [[4, 180, 21], [5, 90, 10], [3, 270, 8], [4, 0, 7]]
+    # test_list2D = tuplelist = [[4, 180, 21], [5, 90, 10], [3, 270, 8], [4, 0, 7]]
     metadata_list2D = list(item.split("\t", ) for item in metadata_str.split("\r\n")[:-1])  # last element is empty -> remove
     metadata_dict = {b: (a, c) for a, b, c in metadata_list2D}
     # {Tag:(group, value)} -> dictionary containing a tuple
@@ -105,7 +114,7 @@ def check_valid_tune(codec, tune):
     x265_tunes = ["psnr", "ssim", "grain", "zerolatency", "fastdecode"]
 
     if tune in ["", "HQ"]:
-        pass
+        return
     elif codec == "x264" and tune not in x264_tunes:
         print_error("Valid tunes for x264: {}".format(", ".join(x264_tunes)))
         quit()
@@ -113,7 +122,21 @@ def check_valid_tune(codec, tune):
         print_error("Valid tunes for x265: {}".format(", ".join(x265_tunes)))
         quit()
     else:
-        pass
+        return
+
+
+def check_valid_transpose(transpose):
+    if transpose in ["", "0", "1", "2", "3", "4"]:
+        return transpose
+    else:
+        print_error("""Valid transpose values are:
+        '' – No rotation
+        0  – Rotate by 90 degrees counter-clockwise and flip vertically
+        1  – Rotate by 90 degrees clockwise
+        2  – Rotate by 90 degrees counter-clockwise
+        3  – Rotate by 90 degrees clockwise and flip vertically
+        4  – Rotate by 180 degrees (not an ffmpeg option)""")
+        quit()
 
 
 def set_HQ_settings(args):
@@ -148,7 +171,7 @@ def get_original_date_and_tz_offset(metadata_dict):
     dates_dict_tz_removed = {k: v.replace(tzinfo=None) for (k, v) in dates_dict.items() if v is not None}
     dates_dict_tz = {k: v for (k, v) in dates_dict.items() if v is not None if v.tzinfo is not None if v.tzinfo.utcoffset(v) is not None}
 
-    min_date = min({k: v.replace(tzinfo=None) for (k, v) in dates_dict_tz_removed.items() if v is not None}.values())
+    # min_date = min({k: v.replace(tzinfo=None) for (k, v) in dates_dict_tz_removed.items() if v is not None}.values())
     original_date = None
     tz_info = None
 
@@ -187,7 +210,7 @@ def get_original_date_and_tz_offset(metadata_dict):
     return {"original_date": original_date.strftime("%Y:%m:%d %H:%M:%S"), "original_date_tz": original_date_tz}
 
 
-def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune=""):
+def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="", transpose=""):
     """Compress movie with x265, crf 25 slow (default) or x264 crf 24 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
 
     # parse clipping information
@@ -206,12 +229,20 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # 24 best for x264, 25 equal quality for x265
     preset_ = (" -preset " + speed) if str(speed) != "" and speed != None else " -preset veryslow" if codec == "x264" else " -preset slow"
     tune_ = (" -tune " + tune) if str(tune) != "" and tune != None else ""
+    transpose_ = ""
+    if str(transpose) == "":
+        pass
+    elif str(transpose) != "4":
+        transpose_ = ' -vf "transpose={}"'.format(transpose)
+    elif str(transpose) == "4":
+        transpose_ = ' -vf "transpose=2,transpose=2"'
+
     movie_lst = os.path.splitext(movie_path)
 
     # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
     movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
-    command = 'ffmpeg{0} -i "{1}"{2} -c:v {3} -crf {4}{5}{6} -map_metadata 0 "{7}"'.format(ss_, movie_path, t_, codec_, crf_, preset_, tune_,
-                                                                                           movie_cmp)
+    command = 'ffmpeg{0} -i "{1}"{2} -c:v {3} -crf {4}{5}{6}{7} -map_metadata 0 "{8}"'.format(ss_, movie_path, t_, codec_, crf_, preset_, tune_,
+                                                                                              transpose_, movie_cmp)
     # -i              -> input file(s)
     # -c:v            -> select video encoder
     # -c:a            -> select audio encoder (skipping this will simply copy the audio stream without reencoding)
@@ -428,7 +459,7 @@ def set_metadata(movie_path, metadata_dict):
     metadata_target_dict: {str, str} = {}
     match_cnt = 0
 
-    for key, value in metadata_to_use_dict.items():
+    for key in metadata_to_use_dict:
         if (key in metadata_dict):
             if (key in metadata_to_replace_dict) and metadata_dict[key] == metadata_to_replace_dict[key][0]:
                 stringbuilder.append("-" + key + '="' + metadata_to_replace_dict[key][1] + '"')
@@ -441,7 +472,7 @@ def set_metadata(movie_path, metadata_dict):
 
     if match_cnt == 0:
         print_info("No metadata found other than dates ...")
-        return # returns None and exits the function
+        return  # returns None and exits the function
 
     # prevents creation of _original file
     stringbuilder.append("-overwrite_original")
@@ -463,7 +494,7 @@ def set_metadata(movie_path, metadata_dict):
 def verify_written_metadata(metadata_target_dict, metadata_written_dict):
     if metadata_target_dict == None:
         return
-    
+
     metadata_missing_dict = {k: v for (k, v) in metadata_target_dict.items() - [(a, c) for a, (b, c) in metadata_written_dict.items()]}
     # (a,c) for a, (b,c) -> convert (key, (group, value)) to (key, value)
 
@@ -476,7 +507,7 @@ def verify_written_metadata(metadata_target_dict, metadata_written_dict):
 def set_metadata_without_group(movie_path, metadata_missing_dict):
     if metadata_missing_dict == None:
         return
-    
+
     stringbuilder = ["exiftool"]
     stringbuilder.append(" -" + " -".join('{}="{}"'.format(k, v) for (k, v) in metadata_missing_dict.items()))
     # Returns a generator object which is then joined.
@@ -532,16 +563,17 @@ def set_metadata_dates(movie_path, metadata_missing_dict, original_date_dict):
     subprocess.check_call(command)
 
 
-def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune):  # clip_from = "00:00:04", clip_to= "00:00:06"
+def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose):  # clip_from = "00:00:04", clip_to= "00:00:06"
 
-    movie_path_in: str
+    #movie_path_in: str
     movie_path_out: str = ""
-    video_codec: str = ""
+    #video_codec: str = ""
 
     metadata_dict = get_metadata(movie_path)
     original_date_dict = get_original_date_and_tz_offset(metadata_dict)
-    compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune)
-    movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
+    compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose)
+    movie_path_out = compression_output_dict["movie_path_out"]
+    #movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
     metadata_target_dict = set_metadata(movie_path_out, metadata_dict)
     metadata_written_dict = get_metadata(movie_path_out)
     metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
@@ -549,7 +581,8 @@ def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune):  # c
     set_metadata_dates(movie_path_out, metadata_dict, original_date_dict)  # must be set at the end to avoid setting the FileModifyDate to today
 
 
-def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune=""):  # clip_from = "00:00:04", clip_to= "00:00:06"
+def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="",
+                   transpose=""):  # clip_from = "00:00:04", clip_to= "00:00:06"
     """movie path is file: compresses the single movie and adds as much metadata from the original as possible\r\n
     movie path is directory: compresses all movies in the directory and adds as much metadata from the originals as possible"""
 
@@ -573,7 +606,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
             if inp == "y":
                 for movie in movies_lst:
                     print_info("Processing {} ...".format(movie))
-                    process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed, tune)
+                    process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed, tune, transpose)
             else:
                 print_info("Quitting...\n")
                 quit()
@@ -586,7 +619,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
         if inp == "y":
             print_info("Processing ...")
-            process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune)
+            process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose)
         else:
             print_info("Quitting...\n")
             quit()
@@ -597,11 +630,10 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
 
 # Handling the command line arguments
-parser = argparse.ArgumentParser(description="Compress a specific movie or all movies in a directory")
+parser = argparse.ArgumentParser(description="Compress a specific movie or all movies in a directory", formatter_class=SmartFormatter)
 parser.add_argument("path", type=check_valid_path, help="Path to the movie or a directory containing movies")
-parser.add_argument(
-    "-cf", "--clip_from", type=check_valid_time, help="Start time from which the movie is to be copied [format 00:00:00 or 00:00:00.0]")
-parser.add_argument("-ct", "--clip_to", type=check_valid_time, help="End time up to which the movie is to be copied [format 00:00:00 or 00:00:00.0]")
+parser.add_argument("--clip_from", type=check_valid_time, help="Start time from which the movie is to be copied [format 00:00:00 or 00:00:00.0]")
+parser.add_argument("--clip_to", type=check_valid_time, help="End time up to which the movie is to be copied [format 00:00:00 or 00:00:00.0]")
 parser.add_argument("-c", "--codec", choices=["x265", "x264"], default="x265", help="Codec to be used for encoding")
 parser.add_argument("--crf", type=int, help="Constant Rate Factor to be used. By default (empty) 25 is used for x265 and 24 for x264")
 parser.add_argument(
@@ -613,21 +645,35 @@ parser.add_argument(
 parser.add_argument(
     "-t",
     "--tune",
+    ##   type=check_valid_tune,    not required, check done implicitly
     choices=["film", "animation", "grain", "stillimage", "fastdecode", "zerolatency", "psnr", "ssim", "HQ"],
     default="",
     help="Set tune option (different options for x264 and x265). Empty by default.")
+parser.add_argument(
+    "-r",
+    "--transpose",
+    type=check_valid_transpose,
+    choices=["0", "1", "2", "3", "4"],
+    default="",
+    help="""R|Set transpose/rotation option (ffmpeg):
+    0 – Rotate by 90 degrees counter-clockwise and flip vertically
+    1 – Rotate by 90 degrees clockwise
+    2 – Rotate by 90 degrees counter-clockwise
+    3 – Rotate by 90 degrees clockwise and flip vertically
+    4 – Rotate by 180 degrees (not an ffmpeg option)""")
 
 args = parser.parse_args()
-#args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-t", "psnr", "-c", "x264"])
+# args = parser.parse_args(["f:\\Libraries\\Pesche\\Docs_Pesche\\Coding\\Python\\MovieCompressor\\IMG_0016.mp4", "-s", "veryfast", "-t", "grain", "-c", "x264", "-r4"])
 # args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-c", "x264"])
 # args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-t", "HQ"])
+# print("Arguments: {}".format(args))
 
 check_valid_tune(args.codec, args.tune)
 
 if args.tune == "HQ":
     args = set_HQ_settings(args)
 
-process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune)
+process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune, args.transpose)
 
 # print(results)
 

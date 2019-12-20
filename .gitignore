@@ -31,4 +31,6 @@ tmp/**
 ~$*
 ExifDataPerModel.xlsx
 DeploymentFolderForBatch.lnk
-
+pending_commit_message.txt
+*.mp4
+*.mov

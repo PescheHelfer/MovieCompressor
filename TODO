@@ -8,7 +8,7 @@ Todo:
   ☐ @low Metadaten in Flatfile auslagern, aber nur jene, die keine zusätzliche Logik benötigen (also z.B. nicht die Datumsfelder)
   ☐ @low Im Metadaten-Flatfile mit Flag definieren, ob Feld auch befüllt werden soll, wenn im Original nicht vorhanden, neu aber ein Wert vorhanden ist (z.B. die meisten Datumsangaben aber nicht alle)
   ✔ Von allen Datumsfeldern den kleinsten Wert nehmen (der bei edierten Movies nicht immer das ModifyDate sein muss) @done(19-03-19 21:54)
-  ☐ Mit Avi und MPEG testen
+  ✔ Mit Avi und MPEG testen @done(19-12-14 13:40)
   ✔ Prüfen ob es ein thm-File gibt, wenn ja, Metadatan daraus einlesen @done(19-03-19 22:09)
   ✔ @high Möglichkeit der Videobeschneidung einbauen (Start, Stop) @done(19-04-07 13:56)
   https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
@@ -38,9 +38,12 @@ Todo:
   ✔ @high Or even better: find optimal setting for dark szenes and implement it as -tune HQ @done(19-04-21 21:56)
   -> x264 -crf 22 -preset veryslow -tune film
   ✔ @low Lower the default CRF by 1 to increase default quality a bit: x265: 26 -> 25, x264: 25 -> 24 @done(19-04-21 21:56)
-  ✔ high: add codec as suffix to filename (x264, x265) @done(19-04-22 14:54)
-  ✔ high: exclude files ending in x264/x265 when searching the directory for movies @done(19-04-22 15:16)
-  ✔ medium: modify batch file to allow passing options even when the path is not specified @done(19-04-23 01:23)
+  ✔ @high add codec as suffix to filename (x264, x265) @done(19-04-22 14:54)
+  ✔ @high exclude files ending in x264/x265 when searching the directory for movies @done(19-04-22 15:16)
+  ✔ @medium modify batch file to allow passing options even when the path is not specified @done(19-04-23 01:23)
+  ✔ @medium add parameter to rotate movie (-vf "transpose=1") https://www.ostechnix.com/how-to-rotate-videos-using-ffmpeg-from-commandline/ @done(19-12-20 16:16)
+  ☐ @medium Either embedd ffmpeg and exiftool (check how to deal with open source license) or create a config file containing the paths to these tools
+  ☐ @medium Create readme
 
 Bugs:
   ✔ @critical bei CreateDate & ModifyDate die Zeitzone abschneiden, da sie von Windows falsch interpretiert wird (Datum / Medium erstellt 1-2 Stunden zu spät dargestellt) @done(19-04-12 00:26)
@@ -58,8 +61,8 @@ Ideas:
   ☐ @low Proper Docstrings using Autodocstring
   ☐ @low Parameter validition e.g. by using dictionaries or when calling it from cmd
   ☐ @low Parameter typing: https://mypy.readthedocs.io/en/latest/cheat_sheet_py3.html
-  ☐ @low as default: use folder from which script is called
-  ☐ @low: Implement some kind of progress bar, at least when looping through file list
+  ✔ @low as default: use folder from which script is called @done(19-12-20 16:18)
+
 
 
 Notes:
