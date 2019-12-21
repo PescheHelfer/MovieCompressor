@@ -1,11 +1,21 @@
 import argparse
+import yaml
 import os
+import sys
 import subprocess
 from datetime import datetime, timezone  # , timedelta
 from colorama import Fore, Style, init
 init()  # colorama
 
 
+# ---- Variables ---- #
+path_exif = ""
+path_ffmpeg = ""
+
+# both are defined in config.yml
+
+
+# ---- Classes ---- #
 class SmartFormatter(argparse.HelpFormatter):
     """Enables multiline help messages
     https://stackoverflow.com/questions/3853722/python-argparse-how-to-insert-newline-in-the-help-text"""
@@ -17,6 +27,7 @@ class SmartFormatter(argparse.HelpFormatter):
         return argparse.HelpFormatter._split_lines(self, text, width)
 
 
+# ---- Functions ---- #
 def print_info(string):
     print(Fore.CYAN + string + Fore.RESET + Style.NORMAL)
 
@@ -30,33 +41,6 @@ def input_color(string):
     inp = input(string)
     print(Fore.RESET + Style.NORMAL)
     return inp
-
-
-def get_metadata(movie_path):
-    """Returns metadata as a dictionary."""
-
-    # if exists, use .thm file to extract metadata, otherwise movie directly
-    movie_lst = os.path.splitext(movie_path)
-    metadata_path = movie_lst[0] + ".thm"
-
-    if not os.path.isfile(metadata_path):  #ToDo: What happens with captial .THM?
-        metadata_path = movie_path
-
-    # get metadata using exiftools (needs to be installed and available in %path%)
-    p1 = subprocess.Popen(
-        ["exiftool", "-s", "-G1", "-t", "--composite", metadata_path],
-        # -s -> returns tags instead of descriptions
-        # --composite -> excludes "calculated tags", that may have the same name as real tags in other cameras and thus lead to mapping problems.
-        # they can't be written anyway - all the information is contained in other tags.
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE)
-    # class "bytes", sequence of bytes, similar to string, but ASCII only and immutable
-    metadata_str = p1.communicate()[0].decode("iso-8859-1")
-    # test_list2D = tuplelist = [[4, 180, 21], [5, 90, 10], [3, 270, 8], [4, 0, 7]]
-    metadata_list2D = list(item.split("\t", ) for item in metadata_str.split("\r\n")[:-1])  # last element is empty -> remove
-    metadata_dict = {b: (a, c) for a, b, c in metadata_list2D}
-    # {Tag:(group, value)} -> dictionary containing a tuple
-    return metadata_dict
 
 
 def try_parse_date(string):
@@ -101,12 +85,14 @@ def check_valid_time(string):
         raise argparse.ArgumentTypeError(msg)
 
 
-def check_valid_path(path):
+def check_valid_path(path, error_msg_appendix=""):
     if os.path.isfile(path) or os.path.isdir(path):
         return path
     else:
-        msg = "Not a valid file or directory path: '{0}'.".format(path)
-        raise argparse.ArgumentTypeError(msg)
+        msg = "Not a valid file or directory path: '{0}'{1}".format(path, ("\r\n" + error_msg_appendix) if error_msg_appendix != "" else "")
+        print_error(msg)
+        quit()
+        #raise argparse.ArgumentTypeError(msg)
 
 
 def check_valid_tune(codec, tune):
@@ -150,6 +136,33 @@ def set_HQ_settings(args):
     args.speed = "veryslow" if (args.speed == None or args.speed == "") else args.speed
     args.tune = "film"
     return args
+
+
+def get_metadata(movie_path):
+    """Returns metadata as a dictionary."""
+
+    # if exists, use .thm file to extract metadata, otherwise movie directly
+    movie_lst = os.path.splitext(movie_path)
+    metadata_path = movie_lst[0] + ".thm"
+
+    if not os.path.isfile(metadata_path):  #ToDo: What happens with captial .THM?
+        metadata_path = movie_path
+
+    # get metadata using exiftools
+    p1 = subprocess.Popen(
+        [path_exif, "-s", "-G1", "-t", "--composite", metadata_path],
+        # -s -> returns tags instead of descriptions
+        # --composite -> excludes "calculated tags", that may have the same name as real tags in other cameras and thus lead to mapping problems.
+        # they can't be written anyway - all the information is contained in other tags.
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE)
+    # class "bytes", sequence of bytes, similar to string, but ASCII only and immutable
+    metadata_str = p1.communicate()[0].decode("iso-8859-1")
+    # test_list2D = tuplelist = [[4, 180, 21], [5, 90, 10], [3, 270, 8], [4, 0, 7]]
+    metadata_list2D = list(item.split("\t", ) for item in metadata_str.split("\r\n")[:-1])  # last element is empty -> remove
+    metadata_dict = {b: (a, c) for a, b, c in metadata_list2D}
+    # {Tag:(group, value)} -> dictionary containing a tuple
+    return metadata_dict
 
 
 def get_original_date_and_tz_offset(metadata_dict):
@@ -241,8 +254,8 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
     # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
     movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
-    command = 'ffmpeg{0} -i "{1}"{2} -c:v {3} -crf {4}{5}{6}{7} -map_metadata 0 "{8}"'.format(ss_, movie_path, t_, codec_, crf_, preset_, tune_,
-                                                                                              transpose_, movie_cmp)
+    command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -map_metadata 0 "{9}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
+                                                                                           tune_, transpose_, movie_cmp)
     # -i              -> input file(s)
     # -c:v            -> select video encoder
     # -c:a            -> select audio encoder (skipping this will simply copy the audio stream without reencoding)
@@ -453,7 +466,7 @@ def set_metadata(movie_path, metadata_dict):
     metadata_to_replace_dict = {"MeteringMode": ["Evaluative", "Multi-segment"]}  #ToDo: add group
 
     # list to join to create the final command string in the end
-    stringbuilder = ["exiftool"]
+    stringbuilder = [path_exif]
 
     # dictionary of tags that are supposed to be written
     metadata_target_dict: {str, str} = {}
@@ -508,7 +521,7 @@ def set_metadata_without_group(movie_path, metadata_missing_dict):
     if metadata_missing_dict == None:
         return
 
-    stringbuilder = ["exiftool"]
+    stringbuilder = [path_exif]
     stringbuilder.append(" -" + " -".join('{}="{}"'.format(k, v) for (k, v) in metadata_missing_dict.items()))
     # Returns a generator object which is then joined.
     # see https://codereview.stackexchange.com/questions/7953/flattening-a-dictionary-into-a-string/7954
@@ -629,6 +642,20 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
         quit()
 
 
+# ---- Procedural Code ---- #
+
+print ("current directory: {}".format(os.getcwd()))
+# change the working directory to the directory of the script (as opposed to that of the movie)
+os.chdir(os.path.dirname(sys.argv[0]))
+print ("current directory: {}".format(os.getcwd()))
+
+# Load the configuration file
+with open("config.yml", 'r') as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+
+path_exif = check_valid_path(cfg['paths']['exif'], "Please check the config file (config.yml) and install exiftool if necessary.")
+path_ffmpeg = check_valid_path(cfg['paths']['ffmpeg'], "Please check the config file (config.yml) and install ffmpeg if necessary.")
+
 # Handling the command line arguments
 parser = argparse.ArgumentParser(description="Compress a specific movie or all movies in a directory", formatter_class=SmartFormatter)
 parser.add_argument("path", type=check_valid_path, help="Path to the movie or a directory containing movies")
@@ -663,9 +690,7 @@ parser.add_argument(
     4 – Rotate by 180 degrees (not an ffmpeg option)""")
 
 args = parser.parse_args()
-# args = parser.parse_args(["f:\\Libraries\\Pesche\\Docs_Pesche\\Coding\\Python\\MovieCompressor\\IMG_0016.mp4", "-s", "veryfast", "-t", "grain", "-c", "x264", "-r4"])
-# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-s", "veryfast", "-c", "x264"])
-# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2019\\'19_03_23 Zoo Zürich\P1210621.MP4", "-t", "HQ"])
+# args = parser.parse_args(["f:\\Libraries\\Pesche\\Docs_Pesche\\Coding\\Python\\MovieCompressor\\Investigations\\MVI_4373.MOV", "-s", "veryfast", "-t", "grain", "-c", "x264", "-r4"])
 # print("Arguments: {}".format(args))
 
 check_valid_tune(args.codec, args.tune)

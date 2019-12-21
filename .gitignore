@@ -5,7 +5,6 @@ node_modules
 *.pyc
 *.vsix
 *.code-workspace
-**/.vscode/.ropeproject/**
 **/testFiles/**/.cache/**
 *.noseids
 .nyc_output
@@ -15,6 +14,7 @@ npm-debug.log
 **/.mypy_cache/**
 !yarn.lock
 coverage/
+.vscode/
 .vscode-test/**
 **/.venv*/
 precommit.hook
@@ -33,5 +33,4 @@ tmp/**
 ~$*
 DeploymentFolderForBatch.lnk
 pending_commit_message.txt
-*.mp4
-*.mov
+config.yml

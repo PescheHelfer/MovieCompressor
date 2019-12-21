@@ -44,7 +44,7 @@ Todo:
   ✔ @high exclude files ending in x264/x265 when searching the directory for movies @done(19-04-22 15:16)
   ✔ @medium modify batch file to allow passing options even when the path is not specified @done(19-04-23 01:23)
   ✔ @medium add parameter to rotate movie (-vf "transpose=1") https://www.ostechnix.com/how-to-rotate-videos-using-ffmpeg-from-commandline/ @done(19-12-20 16:16)
-  ☐ @medium Either embedd ffmpeg and exiftool (check how to deal with open source license) or create a config file containing the paths to these tools
+  ✔ @medium Either embedd ffmpeg and exiftool (check how to deal with open source license) or create a config file containing the paths to these tools @done(19-12-21 20:11)
   ☐ @medium Create readme
 
 Bugs:
