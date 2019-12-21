@@ -4,6 +4,7 @@ out
 node_modules
 *.pyc
 *.vsix
+*.code-workspace
 **/.vscode/.ropeproject/**
 **/testFiles/**/.cache/**
 *.noseids
@@ -24,12 +25,12 @@ languageServer/**
 languageServer.*/**
 bin/**
 obj/**
+Investigations/
 .pytest_cache
 tmp/**
 .python-version
 .vs/
 ~$*
-ExifDataPerModel.xlsx
 DeploymentFolderForBatch.lnk
 pending_commit_message.txt
 *.mp4

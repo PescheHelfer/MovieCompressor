@@ -1,6 +1,0 @@
-Warning: Sorry, Aperture is not writable
-Warning: Sorry, FocalLength35efl is not writable
-Warning: Sorry, Information is not writable
-Warning: Sorry, MediaTimeScale is not writable
-Warning: Sorry, TimeScale is not writable
-Warning: Sorry, VendorID is not writable
