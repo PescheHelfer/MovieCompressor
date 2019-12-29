@@ -254,6 +254,9 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
     # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
     movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
+    # manual override to brighten a movie, ToDo: implement as additional parameter
+    #command = '''{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf "curves=master='0/0.1 0.1/0.6 0.3/0.9 0.7/1', eq=saturation=0.8, hqdn3d=8:8:20:20" -map_metadata 0 "{9}"'''.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
+    #                                                                                       tune_, transpose_, movie_cmp)
     command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -map_metadata 0 "{9}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
                                                                                            tune_, transpose_, movie_cmp)
     # -i              -> input file(s)
@@ -643,14 +646,13 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
 
 # ---- Procedural Code ---- #
-
-print ("current directory: {}".format(os.getcwd()))
-# change the working directory to the directory of the script (as opposed to that of the movie)
-os.chdir(os.path.dirname(sys.argv[0]))
-print ("current directory: {}".format(os.getcwd()))
+# print ("current directory: {}".format(os.getcwd()))
+# change the working directory to the directory of the script (as opposed to that of the movie) to be able to load the config file:
+# os.chdir(os.path.dirname(sys.argv[0]))
+# it's better to keep the movie path in order to address individual movies. Pass the full program path to config.yml instead:
 
 # Load the configuration file
-with open("config.yml", 'r') as ymlfile:
+with open(os.path.dirname(sys.argv[0])+"\\config.yml", 'r') as ymlfile: # os.path.dirname(sys.argv[0]) -> path where the python script lives
     cfg = yaml.safe_load(ymlfile)
 
 path_exif = check_valid_path(cfg['paths']['exif'], "Please check the config file (config.yml) and install exiftool if necessary.")

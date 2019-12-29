@@ -30,7 +30,7 @@ Todo:
   ✔ @high Makernotes (Canon group) are not yet writable in movies (w/o error). Some tags are converted the group XMP-exif, but only if the Canon group is not forced @done(19-04-04 22:20)
   ✔ @high First try to add the group tags, then check which tags have NOT been written (included in the output list but missing in the output file) and write them again not using the group @done(19-04-04 22:20)
   ✔ @medium Checkback: x movies detected in folder / following movies detected in folder -> proceed? @done(19-04-12 00:27)
-  ✔ @medium default for path: current work directory -> handle that in batch file. Unknown what the wd will be in such a call! @done(19-04-16 21:59)
+  ✔ @medium default for path: current work directory -> handle that in batch file. Unknown what the wd will be in such a call! (works for all movies in a directory, but not when specifying single movies) @done(19-12-29 20:40)
   ✔ @high add tune option, e.g. grain for darker szenes. They differ for x264 and x265! @done(19-04-16 21:59)
   ✘ @high Implement aq-mode setting. --aq-mode 3 is good for dark szenes (x264 and x265): http://forum.doom9.org/showthread.php?t=173870 @cancelled(19-04-21 21:56)
   3. AQ enabled with auto-variance and bias to dark scenes. This is recommended for 8-bit encodes or low-bitrate 10-bit encodes, to prevent color banding/blocking. 
@@ -45,7 +45,9 @@ Todo:
   ✔ @medium modify batch file to allow passing options even when the path is not specified @done(19-04-23 01:23)
   ✔ @medium add parameter to rotate movie (-vf "transpose=1") https://www.ostechnix.com/how-to-rotate-videos-using-ffmpeg-from-commandline/ @done(19-12-20 16:16)
   ✔ @medium Either embedd ffmpeg and exiftool (check how to deal with open source license) or create a config file containing the paths to these tools @done(19-12-21 20:11)
-  ☐ @medium Create readme
+  ✔ @medium Create readme @done(19-12-26 20:06)
+  ☐ @medium Add -vf option (video filter)
+  ☐ @low Add kwargs to enable all ffmpeg arguments (Possible via command prompt? Maybe use a parameter called "kwargs"?)
 
 Bugs:
   ✔ @critical bei CreateDate & ModifyDate die Zeitzone abschneiden, da sie von Windows falsch interpretiert wird (Datum / Medium erstellt 1-2 Stunden zu spät dargestellt) @done(19-04-12 00:26)

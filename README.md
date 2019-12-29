@@ -35,7 +35,7 @@ Usage
 
 A list of all processable movies will be displayed. Proceed with 'y' or abort with 'n'.
 
-To compress a single movie, use the full path to the movie, e.g. `MovieCompressor "D:\MyMovies\20191201\Xmas\SomeMovie.mp4"`
+To compress a single movie, pass the filename as argument, e.g. `MovieCompressor SomeMovie.mp4`
 
 By default, all movies will be processed with the following settings:<br />
 `-c:v libx265 -crf 25 -preset slow`
