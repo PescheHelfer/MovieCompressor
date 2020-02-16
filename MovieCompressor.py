@@ -255,8 +255,18 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
     movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
     # manual override to brighten a movie, ToDo: implement as additional parameter
-    #command = '''{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf "curves=master='0/0.1 0.1/0.6 0.3/0.9 0.7/1', eq=saturation=0.8, hqdn3d=8:8:20:20" -map_metadata 0 "{9}"'''.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
+    # -----------------------------------
+    # command = '''{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf "curves=master='0/0.1 0.1/0.6 0.3/0.9 0.7/1', eq=saturation=0.8, hqdn3d=8:8:20:20" -map_metadata 0 "{9}"'''.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
     #                                                                                       tune_, transpose_, movie_cmp)
+    # stabilize/deshake
+    # -----------------
+    # first (outside of this script), generate "analyzed_video.mp4" for movie to be processed:
+    # ffmpeg -i MyMovie.MP4 -vf vidstabdetect=stepsize=32:shakiness=7:accuracy=10:show=1 analyzed_video.mp4
+    # Then uncomment the follwing, comment the original line and run the script:
+    # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf vidstabtransform -map_metadata 0 "{9}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
+    #                                                                                       tune_, transpose_, movie_cmp)
+    # original
+    # --------
     command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -map_metadata 0 "{9}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
                                                                                            tune_, transpose_, movie_cmp)
     # -i              -> input file(s)

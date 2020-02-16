@@ -48,6 +48,7 @@ Todo:
   ✔ @medium Create readme @done(19-12-26 20:06)
   ☐ @medium Add -vf option (video filter)
   ☐ @low Add kwargs to enable all ffmpeg arguments (Possible via command prompt? Maybe use a parameter called "kwargs"?)
+  ☐ @medium Add 2 step stabilization using vidstab
 
 Bugs:
   ✔ @critical bei CreateDate & ModifyDate die Zeitzone abschneiden, da sie von Windows falsch interpretiert wird (Datum / Medium erstellt 1-2 Stunden zu spät dargestellt) @done(19-04-12 00:26)
