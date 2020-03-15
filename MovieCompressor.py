@@ -7,11 +7,9 @@ from datetime import datetime, timezone  # , timedelta
 from colorama import Fore, Style, init
 init()  # colorama
 
-
 # ---- Variables ---- #
 path_exif = ""
 path_ffmpeg = ""
-
 # both are defined in config.yml
 
 
@@ -223,7 +221,7 @@ def get_original_date_and_tz_offset(metadata_dict):
     return {"original_date": original_date.strftime("%Y:%m:%d %H:%M:%S"), "original_date_tz": original_date_tz}
 
 
-def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="", transpose=""):
+def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="", transpose="", stabilize=False):
     """Compress movie with x265, crf 25 slow (default) or x264 crf 24 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
 
     # parse clipping information
@@ -251,24 +249,32 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
         transpose_ = ' -vf "transpose=2,transpose=2"'
 
     movie_lst = os.path.splitext(movie_path)
+    analyzed_video_path = os.path.dirname(movie_path) + "\\analyzed_video.MP4"  # declared here so that it can be used for deletion after encoding
+    transforms_path = os.getcwd()+"\\transforms.trf" # when started from the 
 
     # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
     movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
+    
     # manual override to brighten a movie, ToDo: implement as additional parameter
     # -----------------------------------
     # command = '''{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf "curves=master='0/0.1 0.1/0.6 0.3/0.9 0.7/1', eq=saturation=0.8, hqdn3d=8:8:20:20" -map_metadata 0 "{9}"'''.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
     #                                                                                       tune_, transpose_, movie_cmp)
-    # stabilize/deshake
-    # -----------------
-    # first (outside of this script), generate "analyzed_video.mp4" for movie to be processed:
-    # ffmpeg -i MyMovie.MP4 -vf vidstabdetect=stepsize=32:shakiness=7:accuracy=10:show=1 analyzed_video.mp4
-    # Then uncomment the follwing, comment the original line and run the script:
-    # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf vidstabtransform -map_metadata 0 "{9}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
-    #                                                                                       tune_, transpose_, movie_cmp)
-    # original
-    # --------
-    command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -map_metadata 0 "{9}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
-                                                                                           tune_, transpose_, movie_cmp)
+    stabilize_ = ""
+    if stabilize:
+        command_preproc = '{0} -i "{1}" -vf vidstabdetect=stepsize=6:shakiness=7:accuracy=15:show=1 {2}'.format(
+            path_ffmpeg, movie_path, analyzed_video_path)
+        subprocess.check_call(command_preproc) # generate "analyzed_video.mp4" for movie to be processed
+        stabilize_args = 'vidstabtransform,unsharp=5:5:0.8:3:3:0.4'
+        if transpose_ != "":
+            transpose_ = ' -vf "{0},{1}'.format(stabilize_args,transpose_[6:])  # add the vidstab arguments in front of the already existing -vf transpose arguments. Vidstab MUST be first!
+        else:
+            stabilize_ = ' -vf "{}"'.format(stabilize_args)
+
+    # main encoding step
+    # ------------------
+    command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
+                                                                                                preset_, tune_, transpose_, stabilize_, movie_cmp)
+
     # -i              -> input file(s)
     # -c:v            -> select video encoder
     # -c:a            -> select audio encoder (skipping this will simply copy the audio stream without reencoding)
@@ -283,12 +289,23 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     #                    VLC will start showing 0 sec and end showing 4 sec, while actually only sec were played
     #                    Omitting -copyts solves this problem, but requires calculation of the proper -to parameter:
     #                    -to = desired -to minus -ss
+    # -vf             -> various video filters (e.g. transpose, vistab, unsharp)
     # https://trac.ffmpeg.org/wiki/Encode/H.264
     # http://trac.ffmpeg.org/wiki/Encode/AAC
     # http://ffmpeg.org/ffmpeg-all.html
     # https://superuser.com/questions/138331/using-ffmpeg-to-cut-up-video
     print_info("ffmpeg command: {}".format(command))
     subprocess.check_call(command)
+
+    if stabilize:
+        try:
+            os.remove(analyzed_video_path)
+        except Exception as err:
+            print_error("Could not remove {0} due to the following error:\r\n{1}.\r\nClean up manually if necessary.".format(analyzed_video_path, err))
+        try:
+            os.remove(transforms_path)
+        except Exception as err:
+            print_error("Could not remove {0} due to the following error:\r\n{1}.\r\nClean up manually if necessary.".format(transforms_path, err))
     return {"movie_path_out": movie_cmp, "codec": codec.upper()}
 
 
@@ -589,7 +606,7 @@ def set_metadata_dates(movie_path, metadata_missing_dict, original_date_dict):
     subprocess.check_call(command)
 
 
-def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose):  # clip_from = "00:00:04", clip_to= "00:00:06"
+def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize):  # clip_from = "00:00:04", clip_to= "00:00:06"
 
     #movie_path_in: str
     movie_path_out: str = ""
@@ -597,7 +614,7 @@ def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, trans
 
     metadata_dict = get_metadata(movie_path)
     original_date_dict = get_original_date_and_tz_offset(metadata_dict)
-    compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose)
+    compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize)
     movie_path_out = compression_output_dict["movie_path_out"]
     #movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
     metadata_target_dict = set_metadata(movie_path_out, metadata_dict)
@@ -607,8 +624,8 @@ def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, trans
     set_metadata_dates(movie_path_out, metadata_dict, original_date_dict)  # must be set at the end to avoid setting the FileModifyDate to today
 
 
-def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="",
-                   transpose=""):  # clip_from = "00:00:04", clip_to= "00:00:06"
+def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="", transpose="",
+                   stabilize=False):  # clip_from = "00:00:04", clip_to= "00:00:06"
     """movie path is file: compresses the single movie and adds as much metadata from the original as possible\r\n
     movie path is directory: compresses all movies in the directory and adds as much metadata from the originals as possible"""
 
@@ -632,7 +649,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
             if inp == "y":
                 for movie in movies_lst:
                     print_info("Processing {} ...".format(movie))
-                    process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed, tune, transpose)
+                    process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize)
             else:
                 print_info("Quitting...\n")
                 quit()
@@ -645,7 +662,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
         if inp == "y":
             print_info("Processing ...")
-            process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose)
+            process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize)
         else:
             print_info("Quitting...\n")
             quit()
@@ -662,7 +679,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 # it's better to keep the movie path in order to address individual movies. Pass the full program path to config.yml instead:
 
 # Load the configuration file
-with open(os.path.dirname(sys.argv[0])+"\\config.yml", 'r') as ymlfile: # os.path.dirname(sys.argv[0]) -> path where the python script lives
+with open(os.path.dirname(sys.argv[0]) + "\\config.yml", 'r') as ymlfile:  # os.path.dirname(sys.argv[0]) -> path where the python script lives
     cfg = yaml.safe_load(ymlfile)
 
 path_exif = check_valid_path(cfg['paths']['exif'], "Please check the config file (config.yml) and install exiftool if necessary.")
@@ -700,9 +717,15 @@ parser.add_argument(
     2 – Rotate by 90 degrees counter-clockwise
     3 – Rotate by 90 degrees clockwise and flip vertically
     4 – Rotate by 180 degrees (not an ffmpeg option)""")
+parser.add_argument(
+    "-z",
+    "--stabilize",
+    action='store_true',
+    help="Flag to activate stabilization (deshaking). -z/--stabilize: stabilization on. If nothing is passed, stabilization is off.")
 
 args = parser.parse_args()
-# args = parser.parse_args(["f:\\Libraries\\Pesche\\Docs_Pesche\\Coding\\Python\\MovieCompressor\\Investigations\\MVI_4373.MOV", "-s", "veryfast", "-t", "grain", "-c", "x264", "-r4"])
+# Debugging
+# args = parser.parse_args(["f:\\Temp\\TestMovie\\0643_P8020035.mov", "-s", "veryfast", "-c", "x264", "-z" ])#, "-r0", "-z"])
 # print("Arguments: {}".format(args))
 
 check_valid_tune(args.codec, args.tune)
@@ -710,7 +733,7 @@ check_valid_tune(args.codec, args.tune)
 if args.tune == "HQ":
     args = set_HQ_settings(args)
 
-process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune, args.transpose)
+process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune, args.transpose, args.stabilize) 
 
 # print(results)
 

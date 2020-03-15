@@ -47,8 +47,10 @@ Todo:
   ✔ @medium Either embedd ffmpeg and exiftool (check how to deal with open source license) or create a config file containing the paths to these tools @done(19-12-21 20:11)
   ✔ @medium Create readme @done(19-12-26 20:06)
   ☐ @medium Add -vf option (video filter)
+  ☐ @medium Add flag for unsharp filter with default options (unsharp=5:5:0.8:3:3:0.4), currently enforced when stabilization is True
   ☐ @low Add kwargs to enable all ffmpeg arguments (Possible via command prompt? Maybe use a parameter called "kwargs"?)
-  ☐ @medium Add 2 step stabilization using vidstab
+  ✔ @medium Add 2 step stabilization using vidstab @done(20-03-15 00:04)
+  ☐ Delete transforms.trf after using stabilization
 
 Bugs:
   ✔ @critical bei CreateDate & ModifyDate die Zeitzone abschneiden, da sie von Windows falsch interpretiert wird (Datum / Medium erstellt 1-2 Stunden zu spät dargestellt) @done(19-04-12 00:26)

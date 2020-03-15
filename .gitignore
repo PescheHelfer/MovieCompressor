@@ -34,3 +34,5 @@ tmp/**
 DeploymentFolderForBatch.lnk
 pending_commit_message.txt
 config.yml
+MovieCompressorDev.bat
+transforms.trf
