@@ -72,3 +72,6 @@ optional arguments:
                             2 – Rotate by 90 degrees counter-clockwise
                             3 – Rotate by 90 degrees clockwise and flip vertically
                             4 – Rotate by 180 degrees (not an ffmpeg option)```
+  -z, --stabilize       Flag to activate stabilization (deshaking).
+                        -z/--stabilize: stabilization on. If nothing is
+                        passed, stabilization is off.
