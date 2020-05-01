@@ -259,6 +259,13 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # -----------------------------------
     # command = '''{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf "curves=master='0/0.1 0.1/0.6 0.3/0.9 0.7/1', eq=saturation=0.8, hqdn3d=8:8:20:20" -map_metadata 0 "{9}"'''.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
     #                                                                                       tune_, transpose_, movie_cmp)
+
+    # rescale
+    # -------
+    # https://superuser.com/questions/624563/how-to-resize-a-video-to-make-it-smaller-with-ffmpeg
+    # command = '{0}{1} -i "{2}"{3} -s 640x360 -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
+    #                                                                                             preset_, tune_, transpose_, stabilize_, movie_cmp)   
+
     stabilize_ = ""
     if stabilize:
         command_preproc = '{0} -i "{1}" -vf vidstabdetect=stepsize=6:shakiness=7:accuracy=15:show=1 {2}'.format(
@@ -274,6 +281,7 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # ------------------
     command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
                                                                                                 preset_, tune_, transpose_, stabilize_, movie_cmp)
+
 
     # -i              -> input file(s)
     # -c:v            -> select video encoder
