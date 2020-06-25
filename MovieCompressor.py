@@ -253,7 +253,7 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     transforms_path = os.getcwd()+"\\transforms.trf" # when started from the 
 
     # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
-    movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG"] else ".MP4")
+    movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG", ".WMV"] else ".MP4")
     
     # manual override to brighten a movie, ToDo: implement as additional parameter
     # -----------------------------------
@@ -643,7 +643,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
         movies_lst: [str] = []
         for file in os.listdir(movie_path):
             file_lst = os.path.splitext(file)
-            if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"] and not file_lst[0].lower().endswith(suffix):
+            if file_lst[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG", ".WMV"] and not file_lst[0].lower().endswith(suffix):
                 movies_lst.append(file)
 
         if len(movies_lst) == 0:
@@ -663,7 +663,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
                 quit()
 
     elif os.path.isfile(movie_path) and os.path.splitext(movie_path)[1].upper() in [
-            ".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG"
+            ".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG" ,".WMV"
     ] and not os.path.splitext(movie_path)[0].lower().endswith(suffix):
         print_info("\nAbout to process movie\n\"{}\"".format(movie_path))
         inp = input_color("\nProceed (y/n)? ")
@@ -676,7 +676,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
             quit()
 
     else:
-        print_error("\nFile not recognized as movie (.MOV, .MKV, .MP4, .AVI, .MPG, .MPEG).\nQuitting...")
+        print_error("\nFile not recognized as movie (.MOV, .MKV, .MP4, .AVI, .MPG, .MPEG, .WMV).\nQuitting...")
         quit()
 
 
