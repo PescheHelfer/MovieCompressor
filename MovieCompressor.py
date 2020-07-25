@@ -266,10 +266,10 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # command = '{0}{1} -i "{2}"{3} -s 640x360 -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
     #                                                                                             preset_, tune_, transpose_, stabilize_, movie_cmp)   
 
-    # increase audio volume
-    # ---------------------
+    # increase audio volume, noise reduction and convert to mono (-ac 1)  (don't use noise reduction unless necessary, it causes the voice to sound dull.)
+    # ------------------------------------------------------------------
     # https://trac.ffmpeg.org/wiki/AudioVolume     (use volume=20 for PowerPoint-Videos by K.)
-    # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "volume=10" -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
+    # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "volume=10, highpass=f=200, lowpass=f=3000" -ac 1 -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
     #                                                                                            preset_, tune_, transpose_, stabilize_, movie_cmp)
 
 
@@ -287,10 +287,10 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # main encoding step
     # ------------------
     command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
-                                                                                                preset_, tune_, transpose_, stabilize_, movie_cmp)
+                                                                                               preset_, tune_, transpose_, stabilize_, movie_cmp)
 
-    # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "volume=20" -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
-    #                                                                                            preset_, tune_, transpose_, stabilize_, movie_cmp)
+   # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "volume=5, highpass=f=200, lowpass=f=3000" -ac 1 -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
+   #                                                                                             preset_, tune_, transpose_, stabilize_, movie_cmp)
 
 
     # -i              -> input file(s)
