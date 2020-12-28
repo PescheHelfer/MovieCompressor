@@ -272,6 +272,13 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "volume=10, highpass=f=200, lowpass=f=3000" -ac 1 -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
     #                                                                                            preset_, tune_, transpose_, stabilize_, movie_cmp)
 
+    # fade in volume and audio (3 sec)
+    # --------------------------------
+    # https://dev.to/dak425/add-fade-in-and-fade-out-effects-with-ffmpeg-2bj7
+
+    # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "afade=t=in:st=0:d=3" -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
+                                                                                               preset_, tune_, transpose_, '-vf "fade=t=in:st=0:d=3"', movie_cmp)
+
 
     stabilize_ = ""
     if stabilize:
@@ -286,11 +293,9 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
     # main encoding step
     # ------------------
-    command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
-                                                                                               preset_, tune_, transpose_, stabilize_, movie_cmp)
+    #command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
+    #                                                                                           preset_, tune_, transpose_, stabilize_, movie_cmp)
 
-   # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "volume=5, highpass=f=200, lowpass=f=3000" -ac 1 -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
-   #                                                                                             preset_, tune_, transpose_, stabilize_, movie_cmp)
 
 
     # -i              -> input file(s)
