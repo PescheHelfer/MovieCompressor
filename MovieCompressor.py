@@ -10,6 +10,7 @@ init()  # colorama
 # ---- Variables ---- #
 path_exif = ""
 path_ffmpeg = ""
+
 # both are defined in config.yml
 
 
@@ -250,11 +251,12 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
     movie_lst = os.path.splitext(movie_path)
     analyzed_video_path = os.path.dirname(movie_path) + "\\analyzed_video.MP4"  # declared here so that it can be used for deletion after encoding
-    transforms_path = os.getcwd()+"\\transforms.trf" # when started from the 
+    transforms_path = os.getcwd() + "\\transforms.trf"  # when started from the
 
     # writing with exiftool to mkv or avi is not yet supported -> convert to MP4
-    movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper() if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG", ".WMV"] else ".MP4")
-    
+    movie_cmp = movie_lst[0] + codec.lower() + (movie_lst[1].upper()
+                                                if movie_lst[1].upper() not in [".AVI", ".MKV", ".MPG", ".MPEG", ".WMV"] else ".MP4")
+
     # manual override to brighten a movie, ToDo: implement as additional parameter
     # -----------------------------------
     # command = '''{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf "curves=master='0/0.1 0.1/0.6 0.3/0.9 0.7/1', eq=saturation=0.8, hqdn3d=8:8:20:20" -map_metadata 0 "{9}"'''.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
@@ -264,7 +266,7 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # -------
     # https://superuser.com/questions/624563/how-to-resize-a-video-to-make-it-smaller-with-ffmpeg
     # command = '{0}{1} -i "{2}"{3} -s 640x360 -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
-    #                                                                                             preset_, tune_, transpose_, stabilize_, movie_cmp)   
+    #                                                                                             preset_, tune_, transpose_, stabilize_, movie_cmp)
 
     # increase audio volume, noise reduction and convert to mono (-ac 1)  (don't use noise reduction unless necessary, it causes the voice to sound dull.)
     # ------------------------------------------------------------------
@@ -277,26 +279,25 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # https://dev.to/dak425/add-fade-in-and-fade-out-effects-with-ffmpeg-2bj7
 
     # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "afade=t=in:st=0:d=3" -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
-                                                                                               preset_, tune_, transpose_, '-vf "fade=t=in:st=0:d=3"', movie_cmp)
-
+    #                                                                                           preset_, tune_, transpose_, '-vf "fade=t=in:st=0:d=3"', movie_cmp)
 
     stabilize_ = ""
     if stabilize:
-        command_preproc = '{0} -i "{1}" -vf vidstabdetect=stepsize=6:shakiness=7:accuracy=15:show=1 {2}'.format(
+        command_preproc = '{0} -i "{1}" -vf vidstabdetect=stepsize=6:shakiness=7:accuracy=15:show=1 "{2}"'.format(
             path_ffmpeg, movie_path, analyzed_video_path)
-        subprocess.check_call(command_preproc) # generate "analyzed_video.mp4" for movie to be processed
+        subprocess.check_call(command_preproc)  # generate "analyzed_video.mp4" for movie to be processed
         stabilize_args = 'vidstabtransform,unsharp=5:5:0.8:3:3:0.4'
         if transpose_ != "":
-            transpose_ = ' -vf "{0},{1}'.format(stabilize_args,transpose_[6:])  # add the vidstab arguments in front of the already existing -vf transpose arguments. Vidstab MUST be first!
+            transpose_ = ' -vf "{0},{1}'.format(
+                stabilize_args,
+                transpose_[6:])  # add the vidstab arguments in front of the already existing -vf transpose arguments. Vidstab MUST be first!
         else:
             stabilize_ = ' -vf "{}"'.format(stabilize_args)
 
     # main encoding step
     # ------------------
-    #command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
-    #                                                                                           preset_, tune_, transpose_, stabilize_, movie_cmp)
-
-
+    command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
+                                                                                                preset_, tune_, transpose_, stabilize_, movie_cmp)
 
     # -i              -> input file(s)
     # -c:v            -> select video encoder
@@ -324,7 +325,8 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
         try:
             os.remove(analyzed_video_path)
         except Exception as err:
-            print_error("Could not remove {0} due to the following error:\r\n{1}.\r\nClean up manually if necessary.".format(analyzed_video_path, err))
+            print_error("Could not remove {0} due to the following error:\r\n{1}.\r\nClean up manually if necessary.".format(
+                analyzed_video_path, err))
         try:
             os.remove(transforms_path)
         except Exception as err:
@@ -678,7 +680,7 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
                 quit()
 
     elif os.path.isfile(movie_path) and os.path.splitext(movie_path)[1].upper() in [
-            ".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG" ,".WMV"
+            ".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG", ".WMV"
     ] and not os.path.splitext(movie_path)[0].lower().endswith(suffix):
         print_info("\nAbout to process movie\n\"{}\"".format(movie_path))
         inp = input_color("\nProceed (y/n)? ")
@@ -756,7 +758,7 @@ check_valid_tune(args.codec, args.tune)
 if args.tune == "HQ":
     args = set_HQ_settings(args)
 
-process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune, args.transpose, args.stabilize) 
+process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune, args.transpose, args.stabilize)
 
 # print(results)
 
