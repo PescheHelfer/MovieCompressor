@@ -268,6 +268,12 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # command = '{0}{1} -i "{2}"{3} -s 640x360 -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
     #                                                                                             preset_, tune_, transpose_, stabilize_, movie_cmp)
 
+    # crop
+    # ----
+    # https://video.stackexchange.com/questions/4563/how-can-i-crop-a-video-with-ffmpeg
+    # command = '''{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf "crop=1440:810:240:135" -map_metadata 0 "{9}"'''.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
+    #                                                                                       tune_, transpose_, movie_cmp)
+
     # increase audio volume, noise reduction and convert to mono (-ac 1)  (don't use noise reduction unless necessary, it causes the voice to sound dull.)
     # ------------------------------------------------------------------
     # https://trac.ffmpeg.org/wiki/AudioVolume     (use volume=20 for PowerPoint-Videos by K.)
@@ -298,6 +304,10 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # ------------------
     command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
                                                                                                 preset_, tune_, transpose_, stabilize_, movie_cmp)
+
+    # command = '''{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf "crop=1440:810:240:135" -map_metadata 0 "{9}"'''.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
+    #                                                                                      tune_, transpose_, movie_cmp)
+
 
     # -i              -> input file(s)
     # -c:v            -> select video encoder

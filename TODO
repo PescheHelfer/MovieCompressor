@@ -63,7 +63,16 @@ Bugs:
   ☐ @low set -charset option for exiftools, which may have sideffects, though: http://owl.phy.queensu.ca/~phil/exiftool/faq.html#Q18 http://u88.n24.queensu.ca/exiftool/forum/index.php?topic=6721.0
   ✔ @critical When specifying a movie instead of a directory and adding an option (e.g. -t HQ) an error is thrown @done(19-04-22 19:58)
   ✔ @critical Process hangs when there is no metadata aside from dates (at the step set_metadata_without_group) @done(19-04-22 20:44)
-   
+  ☐ @high When using cut and stabilize at the same time, it analyzes the full lenght movie and then applies the stabilization to the cut movie: out of sync -> even more shakes
+  ☐ @high When cutting the movie first with low compression, and then stabilize it in a second run (normal compression), the group tags can't be written. It hangs with the following output (maybe just implement a timeout): 
+    Trying to write makershift tags without groups ...
+    ======== -
+
+    Manual workaround:
+      - Abort using Ctrl + C
+      - Adjust the FileModifyDate and FileCreateDate using AttributeMagic
+      - exiftool "-CreateDate<FileModifyDate" "-DateTimeOriginal<FileModifyDate" "-DateCreated<FileModifyDate" "-TimeCreated<FileModifyDate" *.*
+  
 Ideas:  
   ☐ @low Proper Docstrings using Autodocstring
   ☐ @low Parameter validition e.g. by using dictionaries or when calling it from cmd
