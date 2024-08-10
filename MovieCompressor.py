@@ -758,6 +758,12 @@ def process_movies(
     suffix = ("x264", "x265")  # to check for already processed movies, used by endswith()
 
     if transfer_metadata:
+        # if target_path is not a full path, combine it with the directory from movie_path
+        if(os.path.isfile(movie_path) and not os.path.isabs(target_path)):
+            # Combine with the directory part of movie_path
+            movie_directory = os.path.dirname(movie_path)
+            target_path = os.path.join(movie_directory, target_path)
+
         if (
             os.path.isfile(movie_path)
             and os.path.splitext(movie_path)[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG", ".WMV"]
@@ -868,21 +874,18 @@ parser.add_argument(
 parser.add_argument(
     "-z",
     "--stabilize",
-    action='store_true',
-    help="Flag to activate stabilization (deshaking). -z/--stabilize: stabilization on. If nothing is passed, stabilization is off.")
+    action="store_true",
+    help="Flag to activate stabilization (deshaking). -z/--stabilize: stabilization on. If nothing is passed, stabilization is off.",
+)
 parser.add_argument(
-    "-m",
-    "--transfer_metadata",
-    action='store_true',
-    help="Flag to transfer metadata from the the source movie (path) to a target movie (target_path).")
-# parser.add_argument("--target_path", type=check_valid_path, help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")    
-parser.add_argument("--target_path", help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")  
-# ToDo: type=check_valid_path should also recognize single files (without directory path) as valid path, or at least try to combine the target file with the previous file
-# Bug: target file recognized as movie if only the file name is provided (without path). Can the full path be appended in the bat file?
+    "-m", "--transfer_metadata", action="store_true", help="Flag to transfer metadata from the the source movie (path) to a target movie (target_path)."
+)
+# parser.add_argument("--target_path", type=check_valid_path, help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")
+parser.add_argument("--target_path", help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")
 
 args = parser.parse_args()
 # Debugging
-# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\005_Ggl_PXL_20240719_082409498-00.00.00.474-00.00.01.000.MP4", "-s", "veryfast", "-c", "x264", "-z", "-m",  "--target_path", "f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\005_Ggl_PXL_20240719_082409498x264.MP4"])#, "-r0", "-z"])
+# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\005_Ggl_PXL_20240719_082409498.MP4", "-s", "veryfast", "-c", "x264", "-z", "-m",  "--target_path", "005_Ggl_PXL_20240719_082409498x264.MP4"])#, "-r0", "-z"])
 
 print("Arguments: {}".format(args))
 
