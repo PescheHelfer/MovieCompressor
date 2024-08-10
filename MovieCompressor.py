@@ -617,7 +617,8 @@ def set_metadata(movie_path, metadata_dict):
     if "AndroidModel" in metadata_dict:
         metadata_dict["Model"] = ("UserData", metadata_dict["AndroidModel"][1])
     if "SamsungModel" in metadata_dict:
-        metadata_dict["Model"] = ("UserData", metadata_dict["SamsungModel"][1])        
+        metadata_dict["Make"] = ("UserData", "Samsung")
+        metadata_dict["Model"] = ("UserData", metadata_dict["SamsungModel"][1])
 
     # list to join to create the final command string in the end
     stringbuilder = [path_exif]
