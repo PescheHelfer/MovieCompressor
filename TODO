@@ -67,7 +67,6 @@ Bugs:
   ☐ @high When cutting the movie first with low compression, and then stabilize it in a second run (normal compression), the group tags can't be written. It hangs with the following output (maybe just implement a timeout): 
     Trying to write makershift tags without groups ...
     ======== -
-
     Manual workaround:
       - Abort using Ctrl + C
       - Adjust the FileModifyDate and FileCreateDate using AttributeMagic
@@ -77,6 +76,11 @@ Ideas:
   ☐ @low Proper Docstrings using Autodocstring
   ☐ @low Parameter validition e.g. by using dictionaries or when calling it from cmd
   ☐ @low Parameter typing: https://mypy.readthedocs.io/en/latest/cheat_sheet_py3.html
+  ☐ @medium Ability to transfer meta data from one movie to another (e.g. for cases when a movie is processed and saved by another tool)
+    -> in process_movie()
+    if transfer_metadata
+      - supress compression_output_dict = compress_movie()
+      - set movie_path_out to passed parameter for target movie (movie_path is the source movie)
   ✔ @low as default: use folder from which script is called @done(19-12-20 16:18)
 
 

@@ -221,6 +221,58 @@ def get_original_date_and_tz_offset(metadata_dict):
 
     return {"original_date": original_date.strftime("%Y:%m:%d %H:%M:%S"), "original_date_tz": original_date_tz}
 
+def parse_gps_string(gps_string):
+    # Convert UserData	GPSCoordinates	46 deg 30' 28.80" N, 9 deg 52' 16.32" E into standard GPS key value pairs
+    # Split the input string by comma to separate latitude and longitude
+    lat_str, lon_str = gps_string.split(", ")
+    
+    # Split each part by spaces to extract the degree, minute, and second components
+    lat_parts = lat_str.split(" ")
+    lon_parts = lon_str.split(" ")
+
+    # Extracting latitude components
+    latitude = f"{lat_parts[0]} {lat_parts[1]} {lat_parts[2]} {lat_parts[3]}"
+    latitude_ref = lat_parts[4]  # This will be 'N' or 'S'
+
+    # Extracting longitude components
+    longitude = f"{lon_parts[0]} {lon_parts[1]} {lon_parts[2]} {lon_parts[3]}"
+    longitude_ref = lon_parts[4]  # This will be 'E' or 'W'
+
+    # Map the reference directions to full names
+    latitude_ref_full = "North" if latitude_ref == 'N' else "South"
+    longitude_ref_full = "East" if longitude_ref == 'E' else "West"
+
+    return latitude, latitude_ref_full, longitude, longitude_ref_full
+
+def parse_location_string(location_string):
+    # Convert Keys:Location of the format +47.4044+8.5442/ into standart GPS key value pairs 
+    # Remove trailing '/' characters
+    location_string = location_string.strip('/')
+
+    # Split the string into latitude and longitude parts
+    # Latitude will start with '+' or '-', and longitude will follow after the next '+' or '-'
+    lat_str = location_string[1:].split('+')[0].split('-')[0]
+    lon_str = location_string[len(lat_str) + 2:]  # +2 to account for the +/- sign and split
+    
+    # Determine the direction based on the sign
+    lat_sign = location_string[0]
+    lon_sign = location_string[len(lat_str) + 1]
+    
+    latitude_ref = 'North' if lat_sign == '+' else 'South'
+    longitude_ref = 'East' if lon_sign == '+' else 'West'
+
+    # Convert decimal degrees to degrees, minutes, seconds format
+    def decimal_to_dms(degree):
+        d = int(degree)
+        m = int((degree - d) * 60)
+        s = (degree - d - m / 60) * 3600
+        return f'{d} deg {m}\' {s:.2f}"'
+
+    # Convert latitude and longitude from decimal degrees to DMS
+    latitude = decimal_to_dms(float(lat_str))
+    longitude = decimal_to_dms(float(lon_str))
+
+    return latitude, latitude_ref, longitude, longitude_ref
 
 def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="", transpose="", stabilize=False):
     """Compress movie with x265, crf 25 slow (default) or x264 crf 24 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
@@ -276,8 +328,8 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
 
     # increase audio volume, noise reduction and convert to mono (-ac 1)  (don't use noise reduction unless necessary, it causes the voice to sound dull.)
     # ------------------------------------------------------------------
-    # https://trac.ffmpeg.org/wiki/AudioVolume     (use volume=20 for PowerPoint-Videos by K.)
-    # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "volume=10, highpass=f=200, lowpass=f=3000" -ac 1 -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
+    # https://trac.ffmpeg.org/wiki/AudioVolume     (use volume=6 for PowerPoint-Videos by K.)
+    # command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -af "volume=6, highpass=f=200, lowpass=f=3000" -ac 1 -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
     #                                                                                            preset_, tune_, transpose_, stabilize_, movie_cmp)
 
     # fade in volume and audio (3 sec)
@@ -304,10 +356,6 @@ def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
     # ------------------
     command = '{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} {9} -map_metadata 0 "{10}"'.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_,
                                                                                                 preset_, tune_, transpose_, stabilize_, movie_cmp)
-
-    # command = '''{0}{1} -i "{2}"{3} -c:v {4} -crf {5}{6}{7}{8} -vf "crop=1440:810:240:135" -map_metadata 0 "{9}"'''.format(path_ffmpeg, ss_, movie_path, t_, codec_, crf_, preset_,
-    #                                                                                      tune_, transpose_, movie_cmp)
-
 
     # -i              -> input file(s)
     # -c:v            -> select video encoder
@@ -359,6 +407,10 @@ def set_metadata(movie_path, metadata_dict):
         "AFAreaMode": "",
         "AFPoint": "",
         # "Aperture": "", # not writeable, but transferred by FFMPEG
+        "AndroidCaptureFPS": "",
+        #"AndroidManufacturer": "", # not writable, convert to UserData
+        #"AndroidModel": "", # not writable, convert to UserData
+        "AndroidVersion": "",
         "ApertureValue": "",
         "AspectRatio": "",
         "Audio": "",
@@ -366,6 +418,7 @@ def set_metadata(movie_path, metadata_dict):
         # "AudioBitrate": "",
         "AutoISO": "",
         "AutoRotate": "",
+        "Author": "",
         "AvgBytesPerSec": "",
         "BitsPerSample": "",
         "BlueBalance": "",
@@ -400,6 +453,7 @@ def set_metadata(movie_path, metadata_dict):
         "DigitalZoomRatio": "",
         "DOF": "",
         "DriveMode": "",
+        "Encoder": "",
         "ExifImageHeight": "",
         "ExifImageWidth": "",
         "ExposureCompensation": "",
@@ -461,6 +515,9 @@ def set_metadata(movie_path, metadata_dict):
         "LensType": "",
         "LightSource": "",
         "LightValue": "",
+        # "Location": "", # not writeable, but transformed to Longitude / Latitude in my code
+        # "Location-eng": "", # not writeable
+        "LocationInformation": "",
         "LongExposureNoiseReduction": "",
         "MacroMode": "",
         "Make": "",
@@ -491,6 +548,7 @@ def set_metadata(movie_path, metadata_dict):
         "RedBalance": "",
         "RollAngle": "",
         "Rotation": "",
+        #"SamsungModel": "", # not writable, convert to UserData
         "Saturation": "",
         "ScaleFactor35efl": "",
         "SceneCaptureType": "",
@@ -527,8 +585,39 @@ def set_metadata(movie_path, metadata_dict):
         "YCbCrSubSampling": ""
     }
 
+    # generate GPS key value pairs based on GPSCoordinates UserData, will be written to XMP-exif
+    if "GPSCoordinates" in metadata_dict and "GPSLatitude" not in metadata_dict:
+        latitude, latitude_ref, longitude, longitude_ref = parse_gps_string(metadata_dict["GPSCoordinates"][1])
+        metadata_dict["GPSLatitude"] = ('GPS', latitude)
+        metadata_dict["GPSLatitudeRef"] = ('GPS', latitude_ref)
+        metadata_dict["GPSLongitude"] = ('GPS', longitude)
+        metadata_dict["GPSLongitudeRef"] = ('GPS', longitude_ref)
+    
+    # generate GPS key value pairs based on Keys:Location will be written to XMP-exif
+    if "Location" in metadata_dict:
+        latitude, latitude_ref, longitude, longitude_ref = parse_location_string(metadata_dict["Location"][1])
+        metadata_dict["GPSLatitude"] = ('GPS', latitude)
+        metadata_dict["GPSLatitudeRef"] = ('GPS', latitude_ref)
+        metadata_dict["GPSLongitude"] = ('GPS', longitude)
+        metadata_dict["GPSLongitudeRef"] = ('GPS', longitude_ref)
+        if "GPSCoordinates" not in metadata_dict:
+            metadata_dict["GPSCoordinates"] = ('UserData', latitude + " " + latitude_ref[0] + ", " + longitude + " " + longitude_ref[0])
+
+    # transform Keys:Location into a writable format (setting the escape characters differently)
+    if "GPSCoordinates" in metadata_dict:
+        metadata_dict["GPSCoordinates"] = ('UserData', metadata_dict["GPSCoordinates"][1].replace(r"\'", "'").replace('"', r'\"'))
+
+   
     # replacement dict to map tag values unknown in the exiftool database to known values
     metadata_to_replace_dict = {"MeteringMode": ["Evaluative", "Multi-segment"]}  #ToDo: add group
+
+    # copy some unwritable Android and Samsung Keys important to determine the make to UserData
+    if "AndroidManufacturer" in metadata_dict:
+        metadata_dict["Make"] = ("UserData", metadata_dict["AndroidManufacturer"][1])
+    if "AndroidModel" in metadata_dict:
+        metadata_dict["Model"] = ("UserData", metadata_dict["AndroidModel"][1])
+    if "SamsungModel" in metadata_dict:
+        metadata_dict["Model"] = ("UserData", metadata_dict["SamsungModel"][1])        
 
     # list to join to create the final command string in the end
     stringbuilder = [path_exif]
@@ -641,17 +730,18 @@ def set_metadata_dates(movie_path, metadata_missing_dict, original_date_dict):
     subprocess.check_call(command)
 
 
-def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize):  # clip_from = "00:00:04", clip_to= "00:00:06"
+def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize, transfer_metadata, target_path):  # clip_from = "00:00:04", clip_to= "00:00:06"
 
-    #movie_path_in: str
+    # movie_path_in: str
     movie_path_out: str = ""
-    #video_codec: str = ""
+    # video_codec: str = ""
 
     metadata_dict = get_metadata(movie_path)
     original_date_dict = get_original_date_and_tz_offset(metadata_dict)
-    compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize)
-    movie_path_out = compression_output_dict["movie_path_out"]
-    #movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
+    if not transfer_metadata:
+        compression_output_dict = compress_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize)
+    movie_path_out = target_path if transfer_metadata else compression_output_dict["movie_path_out"]
+    # movie_path_out, video_codec = compression_output_dict["movie_path_out"], compression_output_dict["codec"]
     metadata_target_dict = set_metadata(movie_path_out, metadata_dict)
     metadata_written_dict = get_metadata(movie_path_out)
     metadata_missing_dict = verify_written_metadata(metadata_target_dict, metadata_written_dict)
@@ -659,14 +749,34 @@ def process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, trans
     set_metadata_dates(movie_path_out, metadata_dict, original_date_dict)  # must be set at the end to avoid setting the FileModifyDate to today
 
 
-def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="", transpose="",
-                   stabilize=False):  # clip_from = "00:00:04", clip_to= "00:00:06"
+def process_movies(
+    movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="", transpose="", stabilize=False, transfer_metadata=False, target_path=""):  # clip_from = "00:00:04", clip_to= "00:00:06"
     """movie path is file: compresses the single movie and adds as much metadata from the original as possible\r\n
     movie path is directory: compresses all movies in the directory and adds as much metadata from the originals as possible"""
 
     suffix = ("x264", "x265")  # to check for already processed movies, used by endswith()
 
-    if os.path.isdir(movie_path):
+    if transfer_metadata:
+        if (
+            os.path.isfile(movie_path)
+            and os.path.splitext(movie_path)[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG", ".WMV"]
+            and os.path.isfile(target_path)
+            and os.path.splitext(target_path)[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG", ".WMV"]
+        ):
+            print_info('\nAbout to transfer metadata from movie\n"{}" to \n"{}"'.format(movie_path, target_path))
+            inp = input_color("\nProceed (y/n)? ")
+
+            if inp == "y":
+                print_info("Transferring ...")
+                process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize, transfer_metadata, target_path)
+            else:
+                print_info("Quitting...\n")
+                quit()
+        else:
+            print_error("\nFile or target file not recognized as movie (.MOV, .MKV, .MP4, .AVI, .MPG, .MPEG, .WMV).\nQuitting...")
+            quit()
+
+    elif os.path.isdir(movie_path):
         movies_lst: [str] = []
         for file in os.listdir(movie_path):
             file_lst = os.path.splitext(file)
@@ -684,20 +794,22 @@ def process_movies(movie_path, clip_from=None, clip_to=None, codec="x265", crf="
             if inp == "y":
                 for movie in movies_lst:
                     print_info("Processing {} ...".format(movie))
-                    process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize)
+                    process_movie(os.path.join(movie_path, movie), clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize, transfer_metadata, target_path)
             else:
                 print_info("Quitting...\n")
                 quit()
 
-    elif os.path.isfile(movie_path) and os.path.splitext(movie_path)[1].upper() in [
-            ".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG", ".WMV"
-    ] and not os.path.splitext(movie_path)[0].lower().endswith(suffix):
-        print_info("\nAbout to process movie\n\"{}\"".format(movie_path))
+    elif (
+        os.path.isfile(movie_path)
+        and os.path.splitext(movie_path)[1].upper() in [".MOV", ".MKV", ".MP4", ".AVI", ".MPG", ".MPEG", ".WMV"]
+        and not os.path.splitext(movie_path)[0].lower().endswith(suffix)
+    ):
+        print_info('\nAbout to process movie\n"{}"'.format(movie_path))
         inp = input_color("\nProceed (y/n)? ")
 
         if inp == "y":
             print_info("Processing ...")
-            process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize)
+            process_movie(movie_path, clip_from, clip_to, codec, crf, speed, tune, transpose, stabilize, transfer_metadata, target_path)
         else:
             print_info("Quitting...\n")
             quit()
@@ -757,18 +869,28 @@ parser.add_argument(
     "--stabilize",
     action='store_true',
     help="Flag to activate stabilization (deshaking). -z/--stabilize: stabilization on. If nothing is passed, stabilization is off.")
+parser.add_argument(
+    "-m",
+    "--transfer_metadata",
+    action='store_true',
+    help="Flag to transfer metadata from the the source movie (path) to a target movie (target_path).")
+# parser.add_argument("--target_path", type=check_valid_path, help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")    
+parser.add_argument("--target_path", help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")  
+# ToDo: type=check_valid_path should also recognize single files (without directory path) as valid path, or at least try to combine the target file with the previous file
+# Bug: target file recognized as movie if only the file name is provided (without path). Can the full path be appended in the bat file?
 
 args = parser.parse_args()
 # Debugging
-# args = parser.parse_args(["f:\\Temp\\TestMovie\\0643_P8020035.mov", "-s", "veryfast", "-c", "x264", "-z" ])#, "-r0", "-z"])
-# print("Arguments: {}".format(args))
+# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\005_Ggl_PXL_20240719_082409498-00.00.00.474-00.00.01.000.MP4", "-s", "veryfast", "-c", "x264", "-z", "-m",  "--target_path", "f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\005_Ggl_PXL_20240719_082409498x264.MP4"])#, "-r0", "-z"])
+
+print("Arguments: {}".format(args))
 
 check_valid_tune(args.codec, args.tune)
 
 if args.tune == "HQ":
     args = set_HQ_settings(args)
 
-process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune, args.transpose, args.stabilize)
+process_movies(args.path, args.clip_from, args.clip_to, args.codec, args.crf, args.speed, args.tune, args.transpose, args.stabilize, args.transfer_metadata, args.target_path)
 
 # print(results)
 
