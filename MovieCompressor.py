@@ -887,9 +887,9 @@ parser.add_argument(
 # parser.add_argument("--target_path", type=check_valid_path, help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")
 parser.add_argument("--target_path", help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")
 
-# args = parser.parse_args()
+args = parser.parse_args()
 # Debugging
-args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\", "-s", "veryfast", "-c", "x264"])#, "-r0", "-z"])
+# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\", "-s", "veryfast", "-c", "x264"])#, "-r0", "-z"])
 
 print("Arguments: {}".format(args))
 
