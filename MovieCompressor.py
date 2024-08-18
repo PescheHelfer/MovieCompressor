@@ -249,30 +249,33 @@ def parse_location_string(location_string):
     # Remove trailing '/' characters
     location_string = location_string.strip('/')
 
-    # Split the string into latitude and longitude parts
-    # Latitude will start with '+' or '-', and longitude will follow after the next '+' or '-'
-    lat_str = location_string[1:].split('+')[0].split('-')[0]
-    lon_str = location_string[len(lat_str) + 2:]  # +2 to account for the +/- sign and split
-    
-    # Determine the direction based on the sign
-    lat_sign = location_string[0]
-    lon_sign = location_string[len(lat_str) + 1]
-    
-    latitude_ref = 'North' if lat_sign == '+' else 'South'
-    longitude_ref = 'East' if lon_sign == '+' else 'West'
+    if location_string:
+        # Split the string into latitude and longitude parts
+        # Latitude will start with '+' or '-', and longitude will follow after the next '+' or '-'
+        lat_str = location_string[1:].split('+')[0].split('-')[0]
+        lon_str = location_string[len(lat_str) + 2:]  # +2 to account for the +/- sign and split
+        
+        # Determine the direction based on the sign
+        lat_sign = location_string[0]
+        lon_sign = location_string[len(lat_str) + 1]
+        
+        latitude_ref = 'North' if lat_sign == '+' else 'South'
+        longitude_ref = 'East' if lon_sign == '+' else 'West'
 
-    # Convert decimal degrees to degrees, minutes, seconds format
-    def decimal_to_dms(degree):
-        d = int(degree)
-        m = int((degree - d) * 60)
-        s = (degree - d - m / 60) * 3600
-        return f'{d} deg {m}\' {s:.2f}"'
+        # Convert decimal degrees to degrees, minutes, seconds format
+        def decimal_to_dms(degree):
+            d = int(degree)
+            m = int((degree - d) * 60)
+            s = (degree - d - m / 60) * 3600
+            return f'{d} deg {m}\' {s:.2f}"'
 
-    # Convert latitude and longitude from decimal degrees to DMS
-    latitude = decimal_to_dms(float(lat_str))
-    longitude = decimal_to_dms(float(lon_str))
+        # Convert latitude and longitude from decimal degrees to DMS
+        latitude = decimal_to_dms(float(lat_str))
+        longitude = decimal_to_dms(float(lon_str))
 
-    return latitude, latitude_ref, longitude, longitude_ref
+        return latitude, latitude_ref, longitude, longitude_ref
+    else:
+        return (None,) * 4
 
 def compress_movie(movie_path, clip_from=None, clip_to=None, codec="x265", crf="", speed="", tune="", transpose="", stabilize=False):
     """Compress movie with x265, crf 25 slow (default) or x264 crf 24 verylow if 'codec' x264 is used. 'crf' and 'speed' can also be set manually."""
@@ -594,17 +597,18 @@ def set_metadata(movie_path, metadata_dict):
         metadata_dict["GPSLongitudeRef"] = ('GPS', longitude_ref)
     
     # generate GPS key value pairs based on Keys:Location will be written to XMP-exif
-    if "Location" in metadata_dict:
+    if "Location" in metadata_dict and metadata_dict["Location"][1] != '':
         latitude, latitude_ref, longitude, longitude_ref = parse_location_string(metadata_dict["Location"][1])
-        metadata_dict["GPSLatitude"] = ('GPS', latitude)
-        metadata_dict["GPSLatitudeRef"] = ('GPS', latitude_ref)
-        metadata_dict["GPSLongitude"] = ('GPS', longitude)
-        metadata_dict["GPSLongitudeRef"] = ('GPS', longitude_ref)
-        if "GPSCoordinates" not in metadata_dict:
-            metadata_dict["GPSCoordinates"] = ('UserData', latitude + " " + latitude_ref[0] + ", " + longitude + " " + longitude_ref[0])
+        if not any(var is None for var in [latitude, longitude]):
+            metadata_dict["GPSLatitude"] = ('GPS', latitude)
+            metadata_dict["GPSLatitudeRef"] = ('GPS', latitude_ref)
+            metadata_dict["GPSLongitude"] = ('GPS', longitude)
+            metadata_dict["GPSLongitudeRef"] = ('GPS', longitude_ref)
+            if "GPSCoordinates" not in metadata_dict:
+                metadata_dict["GPSCoordinates"] = ('UserData', latitude + " " + latitude_ref[0] + ", " + longitude + " " + longitude_ref[0])
 
     # transform Keys:Location into a writable format (setting the escape characters differently)
-    if "GPSCoordinates" in metadata_dict:
+    if "GPSCoordinates" in metadata_dict and metadata_dict["GPSCoordinates"][1] != '':
         metadata_dict["GPSCoordinates"] = ('UserData', metadata_dict["GPSCoordinates"][1].replace(r"\'", "'").replace('"', r'\"'))
 
    
@@ -883,9 +887,9 @@ parser.add_argument(
 # parser.add_argument("--target_path", type=check_valid_path, help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")
 parser.add_argument("--target_path", help="Path to the movie to which metadata from the source movie (path) shall be transferred. Only relevant if -m is set.")
 
-args = parser.parse_args()
+# args = parser.parse_args()
 # Debugging
-# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\005_Ggl_PXL_20240719_082409498.MP4", "-s", "veryfast", "-c", "x264", "-z", "-m",  "--target_path", "005_Ggl_PXL_20240719_082409498x264.MP4"])#, "-r0", "-z"])
+args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\", "-s", "veryfast", "-c", "x264"])#, "-r0", "-z"])
 
 print("Arguments: {}".format(args))
 
