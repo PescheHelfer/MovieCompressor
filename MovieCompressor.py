@@ -664,7 +664,7 @@ def set_metadata(movie_path, metadata_dict):
 
 
 def verify_written_metadata(metadata_target_dict, metadata_written_dict):
-    if metadata_target_dict == None:
+    if not metadata_target_dict or metadata_target_dict == None: # empty dictionaries {} evaluate to false
         return
 
     metadata_missing_dict = {k: v for (k, v) in metadata_target_dict.items() - [(a, c) for a, (b, c) in metadata_written_dict.items()]}
@@ -677,7 +677,7 @@ def verify_written_metadata(metadata_target_dict, metadata_written_dict):
 
 
 def set_metadata_without_group(movie_path, metadata_missing_dict):
-    if metadata_missing_dict == None:
+    if not metadata_missing_dict or metadata_missing_dict == None: # empty dictionaries {} evaluate to false
         return
 
     stringbuilder = [path_exif]
@@ -889,6 +889,7 @@ parser.add_argument("--target_path", help="Path to the movie to which metadata f
 
 args = parser.parse_args()
 # Debugging
+# args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\P1046241.MP4", "-s", "veryfast", "-c", "x264", "-m", "--target_path", "P1046241x264.MP4"])#, "-r0", "-z"])
 # args = parser.parse_args(["f:\\Libraries\\Pesche\\Pictures\\Digicams\\2024\\Test\\MicroTest\\", "-s", "veryfast", "-c", "x264"])#, "-r0", "-z"])
 
 print("Arguments: {}".format(args))

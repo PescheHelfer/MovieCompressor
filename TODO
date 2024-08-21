@@ -66,6 +66,7 @@ Bugs:
   ☐ @high When using cut and stabilize at the same time, it analyzes the full lenght movie and then applies the stabilization to the cut movie: out of sync -> even more shakes
   ☐ @high When cutting the movie first with low compression, and then stabilize it in a second run (normal compression), the group tags can't be written. It hangs with the following output (maybe just implement a timeout): 
   ✔ @critical Panasonic metadata can no longer be applied (index out of range) @done(24-08-18 21:46)
+  ☐ @critical Certain movies hang when they reach "Trying to write makershift tags without groups ..." (movies that were cut using LosslessCut?), e.g. P1046241.MP4
     Trying to write makershift tags without groups ...
     ======== -
     Manual workaround:
